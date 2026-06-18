@@ -75,6 +75,31 @@ textarea {
   animation-delay: 0.3s;
 }
 
+.product-slide {
+  animation: product-fade 0.45s ease-out;
+}
+
+.product-progress {
+  transform-origin: left;
+  animation: product-progress 5.2s linear;
+}
+
+@keyframes product-fade {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes product-progress {
+  from { transform: scaleX(0); }
+  to { transform: scaleX(1); }
+}
+
 @keyframes bounce {
   0%, 60%, 100% { transform: translateY(0); opacity: 0.45; }
   30% { transform: translateY(-5px); opacity: 1; }

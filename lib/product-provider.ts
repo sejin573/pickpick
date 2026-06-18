@@ -21,8 +21,23 @@ type NaverShoppingResponse = {
 
 export type CatalogResult = {
   products: Product[];
+  groups: Array<{
+    id: string;
+    title: string;
+    subtitle: string;
+    category: string;
+    products: Product[];
+  }>;
   provider: "naver";
   label: string;
+};
+
+type SearchGroup = {
+  id: string;
+  title: string;
+  subtitle: string;
+  category: string;
+  queries: string[];
 };
 
 const categoryKeywords: Array<[ProductCategory, string[]]> = [
@@ -50,40 +65,82 @@ function inferCategory(text: string): ProductCategory {
   return match?.[0] ?? "선물";
 }
 
-function buildSearchQueries(message: string, analysis: UserAnalysis): string[] {
+function buildSearchGroups(message: string, analysis: UserAnalysis): SearchGroup[] {
   const explicitProductTerms = [
     "노트북", "헤드폰", "이어폰", "키보드", "모니터", "향수", "지갑",
     "마사지기", "혈압계", "캐리어", "카메라", "가습기", "에어프라이어",
     "스마트워치", "의자", "드라이어", "프로젝터",
   ].filter((keyword) => message.includes(keyword));
   if (explicitProductTerms.length) {
-    return [explicitProductTerms.slice(0, 2).join(" ")];
+    const query = explicitProductTerms.slice(0, 2).join(" ");
+    return [{
+      id: "direct-match",
+      title: `${query} 추천`,
+      subtitle: "요청한 제품군에서 조건에 가장 가까운 상품이에요.",
+      category: inferCategory(query),
+      queries: [query],
+    }];
   }
 
   if (message.includes("여자친구") || message.includes("여친")) {
     return [
-      "다이슨 에어랩",
-      "애플워치 여성",
-      "14K 여성 목걸이",
-      "노이즈캔슬링 헤드폰",
-      "프리미엄 LED 마스크",
-      "여성 가죽 가방",
+      {
+        id: "beauty-fashion",
+        title: "뷰티·패션으로 마음을 전하는 선물",
+        subtitle: "취향을 담기 좋고 생일 선물다운 특별함이 큰 선택이에요.",
+        category: "뷰티/패션",
+        queries: ["14K 여성 목걸이", "여성 가죽 가방", "프리미엄 여성 향수"],
+      },
+      {
+        id: "smart-device",
+        title: "매일 쓰는 프리미엄 디바이스",
+        subtitle: "기억에 남는 감성과 꾸준히 쓰는 실용성을 함께 잡았어요.",
+        category: "전자기기",
+        queries: ["다이슨 에어랩", "애플워치 여성", "노이즈캔슬링 헤드폰"],
+      },
+      {
+        id: "lifestyle",
+        title: "취향을 넓혀주는 라이프스타일 선물",
+        subtitle: "데이트와 일상에서 새로운 경험을 만들어 주는 상품이에요.",
+        category: "선물/라이프",
+        queries: ["휴대용 빔프로젝터", "포토 프린터", "프리미엄 커피머신"],
+      },
     ];
   }
   if (message.includes("남자친구") || message.includes("남친")) {
     return [
-      "남성 프리미엄 향수",
-      "남성 가죽 지갑",
-      "노이즈캔슬링 헤드폰",
-      "남성 스마트워치",
+      {
+        id: "fashion",
+        title: "센스 있는 패션 선물",
+        subtitle: "매일 사용할 수 있으면서 선물의 인상도 분명한 선택이에요.",
+        category: "뷰티/패션",
+        queries: ["남성 프리미엄 향수", "남성 가죽 지갑"],
+      },
+      {
+        id: "device",
+        title: "취향을 업그레이드하는 디바이스",
+        subtitle: "음악과 건강 관리 등 일상의 만족도를 높여줘요.",
+        category: "전자기기",
+        queries: ["노이즈캔슬링 헤드폰", "남성 스마트워치"],
+      },
     ];
   }
   if (analysis.keywords.includes("부모님")) {
     return [
-      "부모님 건강 선물",
-      "프리미엄 마사지기",
-      "스마트 혈압계",
-      "건강관리 스마트워치",
+      {
+        id: "health",
+        title: "매일 챙기는 건강 선물",
+        subtitle: "부담 없이 꾸준히 활용할 수 있는 건강 관리 상품이에요.",
+        category: "건강",
+        queries: ["프리미엄 마사지기", "스마트 혈압계"],
+      },
+      {
+        id: "smart-health",
+        title: "편리한 스마트 건강 기기",
+        subtitle: "건강 기록과 생활 편의를 함께 챙길 수 있어요.",
+        category: "전자기기",
+        queries: ["건강관리 스마트워치", "수면 케어 기기"],
+      },
     ];
   }
 
@@ -91,20 +148,42 @@ function buildSearchQueries(message: string, analysis: UserAnalysis): string[] {
     ["여행", "건강", "뷰티", "개발", "자취"].includes(keyword),
   );
   if (usefulKeywords.length) {
-    return [`${usefulKeywords.slice(0, 2).join(" ")} 추천 상품`];
+    const query = `${usefulKeywords.slice(0, 2).join(" ")} 추천 상품`;
+    return [{
+      id: "context-match",
+      title: "상황 맞춤 추천",
+      subtitle: "입력한 목적과 활용도를 중심으로 골랐어요.",
+      category: inferCategory(query),
+      queries: [query],
+    }];
   }
 
   const target = ["여자친구", "남자친구", "부모님", "친구"].find((keyword) =>
     message.includes(keyword),
   );
-  if (target) return [`${target} ${analysis.occasion} 선물`];
+  if (target) {
+    return [{
+      id: "gift-match",
+      title: `${target}을 위한 선물`,
+      subtitle: `${analysis.occasion}에 잘 어울리는 상품을 모았어요.`,
+      category: "선물",
+      queries: [`${target} ${analysis.occasion} 선물`],
+    }];
+  }
 
-  return [message
+  const query = message
     .replace(/\d+(?:\.\d+)?\s*(?:만원|원|억)/g, "")
     .replace(/추천(?:해줘|해주세요)?/g, "")
     .replace(/\s+/g, " ")
     .trim()
-    .slice(0, 60)];
+    .slice(0, 60);
+  return [{
+    id: "general",
+    title: "PickPick 추천",
+    subtitle: "입력한 상황과 예산을 함께 고려했어요.",
+    category: "추천",
+    queries: [query],
+  }];
 }
 
 function isLowQualityItem(item: NaverShoppingItem): boolean {
@@ -182,12 +261,12 @@ export async function searchLiveProducts(
   const clientSecret = process.env.NAVER_CLIENT_SECRET;
   if (!clientId || !clientSecret) return null;
 
-  const queries = buildSearchQueries(message, analysis).filter(Boolean);
-  if (!queries.length) return null;
+  const searchGroups = buildSearchGroups(message, analysis);
+  if (!searchGroups.length) return null;
 
   try {
     const responses = await Promise.all(
-      queries.map(async (query) => {
+      searchGroups.flatMap((group) => group.queries.map(async (query) => {
         const params = new URLSearchParams({
           query,
           display: "100",
@@ -208,12 +287,12 @@ export async function searchLiveProducts(
         );
         if (!response.ok) return [];
         const data = (await response.json()) as NaverShoppingResponse;
-        return (data.items ?? []).map((item) => ({ item, query }));
-      }),
+        return (data.items ?? []).map((item) => ({ item, query, groupId: group.id }));
+      })),
     );
 
     const seen = new Set<string>();
-    const products = responses
+    const mapped = responses
       .flat()
       .filter(({ item }) => !isLowQualityItem(item))
       .filter(({ item }) => isInBudgetRange(item, message, analysis.budgetValue))
@@ -223,11 +302,27 @@ export async function searchLiveProducts(
         seen.add(key);
         return true;
       })
-      .map(({ item, query }) => mapNaverItem(item, query))
+      .map(({ item, query, groupId }) => ({
+        product: mapNaverItem(item, query),
+        groupId,
+      }))
+      .filter(({ product }) => product.price > 0 && product.productUrl);
+
+    const groups = searchGroups
+      .map((group) => ({
+        ...group,
+        products: mapped
+          .filter((entry) => entry.groupId === group.id)
+          .map((entry) => entry.product),
+      }))
+      .filter((group) => group.products.length >= 3);
+
+    const products = groups
+      .flatMap((group) => group.products)
       .filter((product) => product.price > 0 && product.productUrl);
 
-    return products.length >= 3
-      ? { products, provider: "naver", label: "네이버 쇼핑 실시간 상품" }
+    return groups.length
+      ? { products, groups, provider: "naver", label: "네이버 쇼핑 실시간 상품" }
       : null;
   } catch {
     return null;

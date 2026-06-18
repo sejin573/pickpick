@@ -1,120 +1,235 @@
+"use client";
+
 import Image from "next/image";
+import { useEffect, useMemo, useState } from "react";
 
-import { Recommendation } from "@/lib/types";
+import { Recommendation, RecommendationGroup } from "@/lib/types";
 
-const formatPrice = (price: number) => new Intl.NumberFormat("ko-KR").format(price) + "원";
+const formatPrice = (price: number) =>
+  new Intl.NumberFormat("ko-KR").format(price) + "원";
+
+interface RecommendationCardsProps {
+  recommendations: Recommendation[];
+  groups?: RecommendationGroup[];
+}
 
 export default function RecommendationCards({
   recommendations,
-}: {
-  recommendations: Recommendation[];
-}) {
-  return (
-    <section>
-      <div className="mb-6">
-        <p className="eyebrow">Top picks</p>
-        <h2 className="section-title">지금 가장 잘 맞는 3가지</h2>
-      </div>
-      <div className="grid gap-5 lg:grid-cols-3">
-        {recommendations.map((item, index) => (
-          <article
-            key={item.id}
-            className={`surface group relative flex flex-col overflow-hidden transition duration-300 hover:-translate-y-1 hover:shadow-2xl ${index === 0 ? "ring-2 ring-violet-500" : ""}`}
-          >
-            {index === 0 && (
-              <span className="absolute left-5 top-5 z-10 rounded-full bg-violet-600 px-3 py-1 text-xs font-bold text-white shadow-lg">
-                BEST MATCH
-              </span>
-            )}
-            <div className="relative aspect-[16/11] overflow-hidden bg-gradient-to-br from-violet-100 via-white to-fuchsia-100">
-              {item.imageUrl ? (
-                <Image
-                  src={item.imageUrl}
-                  alt={item.name}
-                  fill
-                  unoptimized
-                  sizes="(max-width: 1024px) 100vw, 33vw"
-                  className="object-contain p-6 transition duration-500 group-hover:scale-105"
-                />
-              ) : (
-                <div className="grid h-full place-items-center">
-                  <div className="grid h-24 w-24 place-items-center rounded-[2rem] bg-white/80 text-4xl shadow-soft">
-                    {item.category === "전자기기" ? "⌁" : item.category === "건강" ? "♡" : "✦"}
-                  </div>
-                </div>
-              )}
-              <div className="absolute bottom-4 right-4">
-                <div
-                  className="score-ring grid h-16 w-16 place-items-center rounded-full shadow-lg"
-                  style={{ "--score": item.score } as React.CSSProperties}
-                >
-                  <div className="grid h-12 w-12 place-items-center rounded-full bg-white text-sm font-black">
-                    {item.score}
-                  </div>
-                </div>
-              </div>
-            </div>
+  groups,
+}: RecommendationCardsProps) {
+  const displayGroups = useMemo<RecommendationGroup[]>(
+    () =>
+      groups?.length
+        ? groups
+        : [{
+            id: "top-picks",
+            title: "지금 가장 잘 맞는 선택",
+            subtitle: "예산과 목적을 함께 고려한 PickPick의 우선 추천이에요.",
+            category: "추천",
+            recommendations,
+          }],
+    [groups, recommendations],
+  );
+  const [activeGroupIndex, setActiveGroupIndex] = useState(0);
+  const [activeProductIndex, setActiveProductIndex] = useState(0);
 
-            <div className="flex flex-1 flex-col p-6">
-              <div className="flex items-start justify-between gap-4">
-              <div>
-                  <div className="flex flex-wrap gap-2">
-                    <span className="chip">{item.category}</span>
-                    {item.isLive && (
-                      <span className="inline-flex items-center gap-1 rounded-full bg-emerald-50 px-3 py-1.5 text-xs font-bold text-emerald-700">
-                        <i className="h-1.5 w-1.5 rounded-full bg-emerald-500" />
-                        LIVE
-                      </span>
-                    )}
-                  </div>
-                  <p className="mt-4 text-xs font-semibold text-zinc-400">
-                    {item.brand || item.mallName || "PickPick curated"}
-                  </p>
-                  <h3 className="mt-1 line-clamp-2 min-h-14 text-xl font-black tracking-tight">
-                    {item.name}
-                  </h3>
-                  <p className="mt-2 text-lg font-black text-violet-600">{formatPrice(item.price)}</p>
-              </div>
-              </div>
-              <p className="mt-5 min-h-24 text-sm leading-6 text-zinc-600">{item.reason}</p>
-              <div className="mt-5 border-t border-zinc-100 pt-5">
-                <p className="text-xs font-bold text-emerald-700">좋은 점</p>
-                <ul className="mt-2 space-y-2 text-sm text-zinc-700">
-                  {item.pros.map((pro) => <li key={pro}>✓ {pro}</li>)}
-                </ul>
-                <p className="mt-5 text-xs font-bold text-amber-700">확인할 점</p>
-                <ul className="mt-2 space-y-2 text-sm text-zinc-600">
-                  {item.cons.map((con) => <li key={con}>! {con}</li>)}
-                </ul>
-              </div>
-              <div className="mt-auto pt-6">
-                <div className="rounded-xl bg-violet-50 p-3 text-xs font-medium leading-5 text-violet-800">
-                  이런 분께 잘 맞아요 · {item.fitFor}
-                </div>
-                {item.productUrl ? (
-                  <a
-                    href={item.productUrl}
-                    target="_blank"
-                    rel="noopener noreferrer nofollow"
-                    className="mt-3 flex w-full items-center justify-center gap-2 rounded-xl bg-ink px-4 py-3.5 text-sm font-bold text-white transition hover:bg-violet-700"
-                  >
-                    {item.mallName ? `${item.mallName}에서 보기` : "판매 페이지 보기"}
-                    <span aria-hidden>↗</span>
-                  </a>
-                ) : (
-                  <a
-                    href={`https://search.shopping.naver.com/search/all?query=${encodeURIComponent(item.name)}`}
-                    target="_blank"
-                    rel="noopener noreferrer nofollow"
-                    className="mt-3 flex w-full items-center justify-center gap-2 rounded-xl border border-zinc-200 px-4 py-3.5 text-sm font-bold text-zinc-700 transition hover:border-violet-300 hover:text-violet-700"
-                  >
-                    실시간 판매처 검색 <span aria-hidden>↗</span>
-                  </a>
-                )}
-              </div>
+  const activeGroup = displayGroups[activeGroupIndex] ?? displayGroups[0];
+  const activeProduct =
+    activeGroup.recommendations[activeProductIndex] ??
+    activeGroup.recommendations[0];
+
+  useEffect(() => {
+    setActiveProductIndex(0);
+  }, [activeGroupIndex]);
+
+  useEffect(() => {
+    if (activeGroup.recommendations.length < 2) return;
+    const timer = window.setInterval(() => {
+      setActiveProductIndex(
+        (current) => (current + 1) % activeGroup.recommendations.length,
+      );
+    }, 5200);
+    return () => window.clearInterval(timer);
+  }, [activeGroup]);
+
+  return (
+    <section className="overflow-hidden rounded-[2rem] border border-white bg-white shadow-soft">
+      <div className="border-b border-zinc-100 px-6 pb-0 pt-7 sm:px-9 sm:pt-9">
+        <div className="flex flex-col justify-between gap-5 lg:flex-row lg:items-end">
+          <div>
+            <p className="eyebrow">Curated collections</p>
+            <h2 className="section-title">취향별로 나눠서 골라봤어요</h2>
+            <p className="muted mt-2">
+              한 가지 정답 대신 카테고리마다 가장 설득력 있는 선택 3개를 비교해 보세요.
+            </p>
+          </div>
+          <div className="flex gap-2 overflow-x-auto pb-4 lg:pb-0">
+            {displayGroups.map((group, index) => (
+              <button
+                key={group.id}
+                type="button"
+                onClick={() => setActiveGroupIndex(index)}
+                className={`whitespace-nowrap rounded-full px-4 py-2.5 text-sm font-bold transition ${
+                  index === activeGroupIndex
+                    ? "bg-ink text-white shadow-lg"
+                    : "bg-zinc-100 text-zinc-500 hover:bg-violet-50 hover:text-violet-700"
+                }`}
+              >
+                {group.category}
+                <span className="ml-2 text-[10px] opacity-60">03</span>
+              </button>
+            ))}
+          </div>
+        </div>
+        <div className="mt-6 h-0.5 w-full overflow-hidden rounded-full bg-zinc-100">
+          <div
+            key={`${activeGroup.id}-${activeProductIndex}`}
+            className="product-progress h-full bg-violet-500"
+          />
+        </div>
+      </div>
+
+      <div
+        key={`${activeGroup.id}-${activeProduct.id}`}
+        className="product-slide grid min-h-[520px] lg:grid-cols-[1.08fr_0.92fr]"
+      >
+        <div className="relative min-h-[360px] overflow-hidden bg-gradient-to-br from-violet-50 via-white to-fuchsia-50 lg:min-h-full">
+          {activeProduct.imageUrl ? (
+            <Image
+              src={activeProduct.imageUrl}
+              alt={activeProduct.name}
+              fill
+              unoptimized
+              priority
+              sizes="(max-width: 1024px) 100vw, 55vw"
+              className="object-contain p-10 sm:p-14"
+            />
+          ) : (
+            <div className="grid h-full min-h-[360px] place-items-center">
+              <span className="grid h-28 w-28 place-items-center rounded-[2.25rem] bg-white text-5xl shadow-soft">
+                ✦
+              </span>
             </div>
-          </article>
-        ))}
+          )}
+          <span className="absolute left-6 top-6 rounded-full bg-white/90 px-3 py-2 text-xs font-black text-violet-700 shadow-sm backdrop-blur">
+            {activeProductIndex === 0 ? "BEST PICK" : `PICK 0${activeProductIndex + 1}`}
+          </span>
+          {activeProduct.isLive && (
+            <span className="absolute right-6 top-6 inline-flex items-center gap-2 rounded-full bg-emerald-500 px-3 py-2 text-xs font-black text-white shadow-lg">
+              <i className="h-1.5 w-1.5 animate-pulse rounded-full bg-white" />
+              LIVE PRICE
+            </span>
+          )}
+        </div>
+
+        <div className="flex flex-col justify-center p-7 sm:p-10 lg:p-12">
+          <div className="flex items-center gap-3 text-xs font-bold">
+            <span className="text-violet-600">{activeGroup.category}</span>
+            <span className="h-1 w-1 rounded-full bg-zinc-300" />
+            <span className="text-zinc-400">
+              {activeProduct.brand || activeProduct.mallName || "PickPick curated"}
+            </span>
+          </div>
+          <h3 className="mt-4 text-2xl font-black leading-tight tracking-[-0.03em] text-ink sm:text-3xl">
+            {activeProduct.name}
+          </h3>
+          <div className="mt-5 flex items-end justify-between gap-5">
+            <p className="text-2xl font-black text-violet-600">
+              {formatPrice(activeProduct.price)}
+            </p>
+            <div className="text-right">
+              <p className="text-[10px] font-bold uppercase tracking-wider text-zinc-400">
+                Match score
+              </p>
+              <p className="text-2xl font-black text-ink">{activeProduct.score}</p>
+            </div>
+          </div>
+
+          <div className="mt-7 rounded-2xl bg-zinc-50 p-5">
+            <p className="text-xs font-black text-violet-600">PICKPICK NOTE</p>
+            <p className="mt-2 text-sm leading-7 text-zinc-600">{activeProduct.reason}</p>
+          </div>
+
+          <div className="mt-6 grid gap-3 sm:grid-cols-2">
+            <div className="rounded-2xl border border-emerald-100 bg-emerald-50/60 p-4">
+              <p className="text-xs font-black text-emerald-700">이런 점이 좋아요</p>
+              <p className="mt-2 text-sm font-semibold leading-6 text-zinc-700">
+                {activeProduct.pros[0]}
+              </p>
+            </div>
+            <div className="rounded-2xl border border-amber-100 bg-amber-50/60 p-4">
+              <p className="text-xs font-black text-amber-700">구매 전 체크</p>
+              <p className="mt-2 text-sm font-semibold leading-6 text-zinc-700">
+                {activeProduct.cons[0]}
+              </p>
+            </div>
+          </div>
+
+          {activeProduct.productUrl ? (
+            <a
+              href={activeProduct.productUrl}
+              target="_blank"
+              rel="noopener noreferrer nofollow"
+              className="mt-6 flex w-full items-center justify-center gap-2 rounded-2xl bg-ink px-5 py-4 text-sm font-black text-white transition hover:bg-violet-700"
+            >
+              {activeProduct.mallName ?? "판매처"}에서 상품 확인
+              <span aria-hidden>↗</span>
+            </a>
+          ) : (
+            <a
+              href={`https://search.shopping.naver.com/search/all?query=${encodeURIComponent(activeProduct.name)}`}
+              target="_blank"
+              rel="noopener noreferrer nofollow"
+              className="mt-6 flex w-full items-center justify-center gap-2 rounded-2xl bg-ink px-5 py-4 text-sm font-black text-white transition hover:bg-violet-700"
+            >
+              실시간 판매처 검색 <span aria-hidden>↗</span>
+            </a>
+          )}
+        </div>
+      </div>
+
+      <div className="border-t border-zinc-100 bg-zinc-50/70 p-5 sm:p-7">
+        <div className="mb-4">
+          <h3 className="font-black text-ink">{activeGroup.title}</h3>
+          <p className="mt-1 text-sm text-zinc-500">{activeGroup.subtitle}</p>
+        </div>
+        <div className="grid gap-3 sm:grid-cols-3">
+          {activeGroup.recommendations.map((item, index) => (
+            <button
+              key={item.id}
+              type="button"
+              onClick={() => setActiveProductIndex(index)}
+              className={`flex items-center gap-3 rounded-2xl border p-3 text-left transition ${
+                index === activeProductIndex
+                  ? "border-violet-400 bg-white shadow-md"
+                  : "border-transparent bg-white/60 hover:border-violet-200 hover:bg-white"
+              }`}
+            >
+              <span className="relative h-16 w-16 shrink-0 overflow-hidden rounded-xl bg-violet-50">
+                {item.imageUrl ? (
+                  <Image
+                    src={item.imageUrl}
+                    alt=""
+                    fill
+                    unoptimized
+                    sizes="64px"
+                    className="object-contain p-1"
+                  />
+                ) : (
+                  <span className="grid h-full place-items-center text-xl">✦</span>
+                )}
+              </span>
+              <span className="min-w-0">
+                <span className="line-clamp-2 text-xs font-bold leading-5 text-zinc-800">
+                  {item.name}
+                </span>
+                <span className="mt-1 block text-xs font-black text-violet-600">
+                  {formatPrice(item.price)}
+                </span>
+              </span>
+            </button>
+          ))}
+        </div>
       </div>
     </section>
   );

@@ -64,6 +64,14 @@ export interface Recommendation {
   isLive?: boolean;
 }
 
+export interface RecommendationGroup {
+  id: string;
+  title: string;
+  subtitle: string;
+  category: string;
+  recommendations: Recommendation[];
+}
+
 export interface ComparisonItem {
   name: string;
   price: number;
@@ -85,6 +93,7 @@ export interface RecommendResponse {
   analysis: Omit<UserAnalysis, "budgetValue" | "keywords">;
   agentSteps: AgentStep[];
   recommendations: Recommendation[];
+  recommendationGroups?: RecommendationGroup[];
   comparison: ComparisonItem[];
   buyingGuide: BuyingGuide;
   meta?: {

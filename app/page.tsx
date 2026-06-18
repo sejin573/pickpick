@@ -90,9 +90,12 @@ export default function Home() {
                   {result.meta.notice}
                 </div>
               )}
-              <AgentSteps steps={result.agentSteps} />
               <AnalysisPanel analysis={result.analysis} />
-              <RecommendationCards recommendations={result.recommendations} />
+              <RecommendationCards
+                recommendations={result.recommendations}
+                groups={result.recommendationGroups}
+              />
+              <AgentSteps steps={result.agentSteps} />
               <ComparisonTable items={result.comparison} />
               <BuyingGuide guide={result.buyingGuide} />
               <ServiceInfo onSelect={selectPrompt} />
