@@ -50,34 +50,59 @@ function inferCategory(text: string): ProductCategory {
   return match?.[0] ?? "선물";
 }
 
-function buildSearchQuery(message: string, analysis: UserAnalysis): string {
+function buildSearchQueries(message: string, analysis: UserAnalysis): string[] {
   const explicitProductTerms = [
     "노트북", "헤드폰", "이어폰", "키보드", "모니터", "향수", "지갑",
     "마사지기", "혈압계", "캐리어", "카메라", "가습기", "에어프라이어",
     "스마트워치", "의자", "드라이어", "프로젝터",
   ].filter((keyword) => message.includes(keyword));
   if (explicitProductTerms.length) {
-    return explicitProductTerms.slice(0, 2).join(" ");
+    return [explicitProductTerms.slice(0, 2).join(" ")];
+  }
+
+  if (message.includes("여자친구") || message.includes("여친")) {
+    return [
+      "여성 프리미엄 향수",
+      "여성 주얼리 목걸이",
+      "여성 가죽 가방",
+      "프리미엄 뷰티기기",
+    ];
+  }
+  if (message.includes("남자친구") || message.includes("남친")) {
+    return [
+      "남성 프리미엄 향수",
+      "남성 가죽 지갑",
+      "노이즈캔슬링 헤드폰",
+      "남성 스마트워치",
+    ];
+  }
+  if (analysis.keywords.includes("부모님")) {
+    return [
+      "부모님 건강 선물",
+      "프리미엄 마사지기",
+      "스마트 혈압계",
+      "건강관리 스마트워치",
+    ];
   }
 
   const usefulKeywords = analysis.keywords.filter((keyword) =>
     ["여행", "건강", "뷰티", "개발", "자취"].includes(keyword),
   );
   if (usefulKeywords.length) {
-    return `${usefulKeywords.slice(0, 2).join(" ")} 추천 상품`;
+    return [`${usefulKeywords.slice(0, 2).join(" ")} 추천 상품`];
   }
 
   const target = ["여자친구", "남자친구", "부모님", "친구"].find((keyword) =>
     message.includes(keyword),
   );
-  if (target) return `${target} ${analysis.occasion} 선물`;
+  if (target) return [`${target} ${analysis.occasion} 선물`];
 
-  return message
+  return [message
     .replace(/\d+(?:\.\d+)?\s*(?:만원|원|억)/g, "")
     .replace(/추천(?:해줘|해주세요)?/g, "")
     .replace(/\s+/g, " ")
     .trim()
-    .slice(0, 60);
+    .slice(0, 60)];
 }
 
 function isLowQualityItem(item: NaverShoppingItem): boolean {
@@ -85,7 +110,26 @@ function isLowQualityItem(item: NaverShoppingItem): boolean {
   return [
     "렌탈", "대여", "중고", "리퍼", "해외직구", "구매대행", "도서",
     "강의", "교육", "학원", "부품", "케이스", "보호필름",
+    "이벤트용품", "파티용품", "촛불", "캔들 숫자", "케이크 토퍼",
+    "현수막", "풍선", "프로포즈 용품", "답프로포즈", "용돈박스",
+    "포장지", "쇼핑백", "스티커", "엽서",
   ].some((keyword) => text.includes(keyword));
+}
+
+function isInBudgetRange(
+  item: NaverShoppingItem,
+  message: string,
+  budget: number | null,
+): boolean {
+  if (!budget) return true;
+  const price = Number(item.lprice);
+  if (!price) return false;
+
+  if (message.includes("이하")) return price <= budget && price >= budget * 0.15;
+  if (message.match(/\d+(?:\.\d+)?\s*만원대/)) {
+    return price >= budget * 0.5 && price <= budget * 1.5;
+  }
+  return price >= budget * 0.3 && price <= budget * 1.35;
 }
 
 function mapNaverItem(item: NaverShoppingItem, query: string): Product {
@@ -133,34 +177,48 @@ export async function searchLiveProducts(
   const clientSecret = process.env.NAVER_CLIENT_SECRET;
   if (!clientId || !clientSecret) return null;
 
-  const query = buildSearchQuery(message, analysis);
-  if (!query) return null;
+  const queries = buildSearchQueries(message, analysis).filter(Boolean);
+  if (!queries.length) return null;
 
   try {
-    const params = new URLSearchParams({
-      query,
-      display: "30",
-      start: "1",
-      sort: "sim",
-      exclude: "used:rental:cbshop",
-    });
-    const response = await fetch(
-      `https://openapi.naver.com/v1/search/shop.json?${params.toString()}`,
-      {
-        headers: {
-          "X-Naver-Client-Id": clientId,
-          "X-Naver-Client-Secret": clientSecret,
-        },
-        signal: AbortSignal.timeout(6000),
-        next: { revalidate: 900 },
-      },
+    const responses = await Promise.all(
+      queries.map(async (query) => {
+        const params = new URLSearchParams({
+          query,
+          display: "20",
+          start: "1",
+          sort: "sim",
+          exclude: "used:rental:cbshop",
+        });
+        const response = await fetch(
+          `https://openapi.naver.com/v1/search/shop.json?${params.toString()}`,
+          {
+            headers: {
+              "X-Naver-Client-Id": clientId,
+              "X-Naver-Client-Secret": clientSecret,
+            },
+            signal: AbortSignal.timeout(6000),
+            next: { revalidate: 900 },
+          },
+        );
+        if (!response.ok) return [];
+        const data = (await response.json()) as NaverShoppingResponse;
+        return (data.items ?? []).map((item) => ({ item, query }));
+      }),
     );
 
-    if (!response.ok) return null;
-    const data = (await response.json()) as NaverShoppingResponse;
-    const products = (data.items ?? [])
-      .filter((item) => !isLowQualityItem(item))
-      .map((item) => mapNaverItem(item, query))
+    const seen = new Set<string>();
+    const products = responses
+      .flat()
+      .filter(({ item }) => !isLowQualityItem(item))
+      .filter(({ item }) => isInBudgetRange(item, message, analysis.budgetValue))
+      .filter(({ item }) => {
+        const key = item.productId || `${stripHtml(item.title)}-${item.lprice}`;
+        if (seen.has(key)) return false;
+        seen.add(key);
+        return true;
+      })
+      .map(({ item, query }) => mapNaverItem(item, query))
       .filter((product) => product.price > 0 && product.productUrl);
 
     return products.length >= 3

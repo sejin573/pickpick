@@ -111,6 +111,23 @@ function budgetScore(price: number, budget: number | null, strict: boolean): num
   return -25;
 }
 
+function contextualBudgetScore(
+  price: number,
+  budget: number | null,
+  message: string,
+): number {
+  if (!budget) return 12;
+  const ratio = price / budget;
+
+  if (message.match(/\d+(?:\.\d+)?\s*만원대/)) {
+    if (ratio >= 0.75 && ratio <= 1.25) return 30;
+    if (ratio >= 0.5 && ratio <= 1.5) return 18;
+    return -35;
+  }
+
+  return budgetScore(price, budget, message.includes("이하"));
+}
+
 function scoreProduct(
   product: Product,
   analysis: UserAnalysis,
@@ -127,7 +144,7 @@ function scoreProduct(
 
   const matched = analysis.keywords.filter((keyword) => searchable.includes(keyword));
   let score = 22 + matched.length * 9;
-  score += budgetScore(product.price, analysis.budgetValue, message.includes("이하"));
+  score += contextualBudgetScore(product.price, analysis.budgetValue, message);
   score += product.practicalScore * 0.15;
   score += product.emotionalScore * 0.1;
   score += product.valueScore * 0.13;
