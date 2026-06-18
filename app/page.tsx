@@ -1,6 +1,6 @@
 "use client";
 
-import { ReactNode, useRef, useState } from "react";
+import { ReactNode, useEffect, useRef, useState } from "react";
 
 import AgentSteps from "@/components/AgentSteps";
 import AnalysisPanel from "@/components/AnalysisPanel";
@@ -33,6 +33,15 @@ export default function Home() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const resultRef = useRef<HTMLDivElement>(null);
+  const requestControllerRef = useRef<AbortController | null>(null);
+  const requestIdRef = useRef(0);
+
+  useEffect(
+    () => () => {
+      requestControllerRef.current?.abort();
+    },
+    [],
+  );
 
   const selectPrompt = (prompt: string) => {
     setMessage(prompt);
@@ -41,19 +50,30 @@ export default function Home() {
   };
 
   const resetToHome = () => {
+    requestIdRef.current += 1;
+    requestControllerRef.current?.abort();
+    requestControllerRef.current = null;
     setResult(null);
     setMessage("");
     setSubmittedMessage("");
     setError("");
+    setLoading(false);
     window.scrollTo({ top: 0, behavior: "smooth" });
   };
 
   const requestRecommendation = async () => {
+    if (loading) return;
     const trimmed = message.trim();
     if (!trimmed) {
       setError("추천받고 싶은 대상, 상황 또는 예산을 한 문장으로 입력해 주세요.");
       return;
     }
+
+    requestControllerRef.current?.abort();
+    const controller = new AbortController();
+    const requestId = requestIdRef.current + 1;
+    requestControllerRef.current = controller;
+    requestIdRef.current = requestId;
 
     setLoading(true);
     setSubmittedMessage(trimmed);
@@ -68,19 +88,30 @@ export default function Home() {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ message: trimmed }),
+        signal: controller.signal,
       });
       const data = (await response.json()) as RecommendResponse & {
         error?: string;
       };
       if (!response.ok)
         throw new Error(data.error ?? "추천 결과를 불러오지 못했습니다.");
+      if (requestId !== requestIdRef.current) return;
       setResult(data);
     } catch (caught) {
+      if (
+        controller.signal.aborted ||
+        requestId !== requestIdRef.current
+      ) {
+        return;
+      }
       setError(
         caught instanceof Error ? caught.message : "잠시 후 다시 시도해 주세요.",
       );
     } finally {
-      setLoading(false);
+      if (requestId === requestIdRef.current) {
+        requestControllerRef.current = null;
+        setLoading(false);
+      }
     }
   };
 
@@ -176,7 +207,7 @@ export default function Home() {
                 <BuyingGuide guide={result.buyingGuide} />
               </ChatItem>
               <ChatItem delay={0.9}>
-                <ServiceInfo onSelect={selectPrompt} />
+                <ServiceInfo onSelect={selectPrompt} meta={result.meta} />
               </ChatItem>
             </>
           )}

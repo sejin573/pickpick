@@ -269,6 +269,31 @@ function buildBuyingGuide(
   };
 }
 
+export function buildDecisionSupport(
+  message: string,
+  recommendations: Recommendation[],
+  catalog: Product[] = products,
+): Pick<RecommendResponse, "comparison" | "buyingGuide"> {
+  const analysis = analyzeMessage(message);
+  const productsById = new Map(catalog.map((product) => [product.id, product]));
+
+  return {
+    comparison: recommendations.map((item) => {
+      const source = productsById.get(item.id);
+      return {
+        name: item.name,
+        price: item.price,
+        purposeFit: item.score,
+        practicality: source?.practicalScore ?? 80,
+        emotional: source?.emotionalScore ?? 75,
+        value: source?.valueScore ?? 80,
+        risk: source?.riskScore ?? 24,
+      };
+    }),
+    buyingGuide: buildBuyingGuide(recommendations, analysis),
+  };
+}
+
 export function fallbackRecommend(
   message: string,
   catalog: Product[] = products,
@@ -677,7 +702,10 @@ async function enhanceWithOpenAI(
     const copy = JSON.parse(content) as LlmCopy;
 
     return applyLlmCopy(message, result, copy, candidateGroups);
-  } catch {
+  } catch (error) {
+    console.error("[agent] OpenAI enhancement failed", {
+      message: error instanceof Error ? error.message : "unknown error",
+    });
     return result;
   }
 }

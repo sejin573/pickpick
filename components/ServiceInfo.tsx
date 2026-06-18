@@ -1,6 +1,15 @@
 import PromptExamples from "@/components/PromptExamples";
+import { RecommendResponse } from "@/lib/types";
 
-export default function ServiceInfo({ onSelect }: { onSelect: (prompt: string) => void }) {
+export default function ServiceInfo({
+  onSelect,
+  meta,
+}: {
+  onSelect: (prompt: string) => void;
+  meta?: RecommendResponse["meta"];
+}) {
+  const usesLiveCatalog = meta?.catalogProvider === "naver";
+
   return (
     <section className="grid gap-5 lg:grid-cols-[1.1fr_0.9fr]">
       <article className="surface p-6 sm:p-8">
@@ -31,14 +40,22 @@ export default function ServiceInfo({ onSelect }: { onSelect: (prompt: string) =
         <div className="flex flex-col justify-between gap-5 sm:flex-row sm:items-center">
           <div>
             <p className="eyebrow">Data source</p>
-            <h2 className="mt-2 text-xl font-bold">현재는 검증 가능한 샘플 데이터로 동작합니다</h2>
+            <h2 className="mt-2 text-xl font-bold">
+              {usesLiveCatalog
+                ? "네이버 쇼핑의 실제 판매 상품을 확인했습니다"
+                : "검증 가능한 샘플 데이터로 안전하게 동작합니다"}
+            </h2>
             <p className="muted mt-2 max-w-3xl">
-              과제용으로 구성한 7개 카테고리, 28개 상품 데이터셋을 사용합니다.
-              향후 네이버 쇼핑 API, 쿠팡 파트너스, 자사몰 상품 DB와 리뷰 데이터로 교체할 수 있는 구조입니다.
+              {usesLiveCatalog
+                ? "현재 판매 중인 상품과 가격을 조회했으며, 최종 가격·재고·배송 일정은 판매처에서 한 번 더 확인해 주세요."
+                : "외부 상품 API를 사용할 수 없을 때는 7개 카테고리, 28개 내장 상품 데이터셋으로 추천 흐름을 유지합니다."}
             </p>
           </div>
           <div className="flex shrink-0 flex-wrap gap-2">
-            {["28 products", "7 categories", "Fallback ready"].map((item) => (
+            {(usesLiveCatalog
+              ? ["Live catalog", "Naver Shopping", "Fallback ready"]
+              : ["28 products", "7 categories", "Fallback ready"]
+            ).map((item) => (
               <span key={item} className="chip">{item}</span>
             ))}
           </div>

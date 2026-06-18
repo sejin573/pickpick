@@ -32,6 +32,7 @@ export default function Hero({
             }
           }}
           rows={compact ? 1 : 2}
+          maxLength={500}
           placeholder="누구를 위한 어떤 상품을 찾고 있나요?"
           className="max-h-40 min-h-11 flex-1 resize-none border-0 bg-transparent px-3 py-3 text-[15px] leading-6 text-ink outline-none placeholder:text-zinc-400"
           aria-label="추천 상황 입력"

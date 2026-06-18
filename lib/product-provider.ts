@@ -715,41 +715,47 @@ export async function searchLiveProducts(
       })),
     );
 
-    const seen = new Set<string>();
-    const mapped = responses
-      .flat()
-      .filter(({ item }) => !isLowQualityItem(item))
-      .filter(({ item, query }) => isRelevantToQuery(item, query))
-      .filter(({ item }) => isInBudgetRange(item, message, analysis.budgetValue))
-      .filter(({ item }) => {
-        const key = item.productId || `${stripHtml(item.title)}-${item.lprice}`;
-        if (seen.has(key)) return false;
-        seen.add(key);
-        return true;
-      })
-      .map(({ item, query, groupId, rank }) => ({
-        product: { ...mapNaverItem(item, query), popularityRank: rank },
-        groupId,
-      }))
-      .filter(({ product }) => product.price > 0 && product.productUrl);
-
     const groups = searchGroups
-      .map((group) => ({
-        ...group,
-        products: mapped
+      .map((group) => {
+        const seen = new Set<string>();
+        const products = responses
+          .flat()
           .filter((entry) => entry.groupId === group.id)
-          .map((entry) => entry.product),
-      }))
+          .filter(({ item }) => !isLowQualityItem(item))
+          .filter(({ item, query }) => isRelevantToQuery(item, query))
+          .filter(({ item }) =>
+            isInBudgetRange(item, message, analysis.budgetValue),
+          )
+          .filter(({ item }) => {
+            const key =
+              item.productId || `${stripHtml(item.title)}-${item.lprice}`;
+            if (seen.has(key)) return false;
+            seen.add(key);
+            return true;
+          })
+          .map(({ item, query, rank }) => ({
+            ...mapNaverItem(item, query),
+            popularityRank: rank,
+          }))
+          .filter((product) => product.price > 0 && product.productUrl);
+
+        return { ...group, products };
+      })
       .filter((group) => group.products.length >= 3);
 
-    const products = groups
+    const uniqueProducts = new Map<string, Product>();
+    groups
       .flatMap((group) => group.products)
-      .filter((product) => product.price > 0 && product.productUrl);
+      .forEach((product) => uniqueProducts.set(product.id, product));
+    const products = Array.from(uniqueProducts.values());
 
     return groups.length
       ? { products, groups, provider: "naver", label: "네이버 쇼핑 실시간 상품" }
       : null;
-  } catch {
+  } catch (error) {
+    console.error("[catalog] Naver shopping search failed", {
+      message: error instanceof Error ? error.message : "unknown error",
+    });
     return null;
   }
 }

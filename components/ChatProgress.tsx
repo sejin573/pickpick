@@ -16,8 +16,8 @@ const stages = [
     description: "가격 범위와 상품 유형을 검사해 노이즈를 걸러내고 있어요.",
   },
   {
-    title: "AI가 후보를 비교하고 있어요",
-    description: "당신의 맥락에 맞는 최종 상품을 다시 골라내고 있어요.",
+    title: "후보를 비교하고 있어요",
+    description: "조건과 인기도를 함께 보고 최종 상품을 골라내고 있어요.",
   },
   {
     title: "구매 가이드를 정리하고 있어요",
@@ -52,7 +52,7 @@ export default function ChatProgress({ complete = false }: ChatProgressProps) {
       <span className="grid h-9 w-9 shrink-0 place-items-center rounded-xl bg-ink text-[13px] font-semibold text-white">
         P
       </span>
-      <div className="min-w-0 flex-1 max-w-2xl">
+      <div className="w-fit min-w-0 max-w-[calc(100%-3rem)] sm:max-w-2xl">
         <p className="text-[11px] font-medium tracking-[0.18em] text-violet-500">
           PICKPICK AGENT
         </p>

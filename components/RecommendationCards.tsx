@@ -53,6 +53,7 @@ export default function RecommendationCards({
 
   useEffect(() => {
     setActiveGroupIndex(0);
+    setActiveProductIndex(0);
   }, [activeBandId]);
 
   const safeGroupIndex = Math.min(
@@ -60,13 +61,17 @@ export default function RecommendationCards({
     Math.max(displayGroups.length - 1, 0),
   );
   const activeGroup = displayGroups[safeGroupIndex] ?? displayGroups[0];
+  const safeProductIndex = Math.min(
+    Math.max(activeProductIndex, 0),
+    Math.max((activeGroup?.recommendations.length ?? 1) - 1, 0),
+  );
   const activeProduct =
-    activeGroup?.recommendations[activeProductIndex] ??
+    activeGroup?.recommendations[safeProductIndex] ??
     activeGroup?.recommendations[0];
 
   useEffect(() => {
     setActiveProductIndex(0);
-  }, [safeGroupIndex]);
+  }, [safeGroupIndex, activeGroup?.id, allGroups]);
 
   useEffect(() => {
     if (!activeGroup || activeGroup.recommendations.length < 2) return;
@@ -142,7 +147,7 @@ export default function RecommendationCards({
         </div>
         <div className="mt-6 h-0.5 w-full overflow-hidden rounded-full bg-zinc-100">
           <div
-            key={`${activeGroup.id}-${activeProductIndex}`}
+            key={`${activeGroup.id}-${safeProductIndex}`}
             className="product-progress h-full bg-violet-500"
           />
         </div>
@@ -158,7 +163,6 @@ export default function RecommendationCards({
               src={activeProduct.imageUrl}
               alt={activeProduct.name}
               fill
-              unoptimized
               priority
               sizes="(max-width: 1024px) 100vw, 55vw"
               className="object-contain p-10 sm:p-14"
@@ -171,7 +175,7 @@ export default function RecommendationCards({
             </div>
           )}
           <span className="absolute left-6 top-6 rounded-full bg-white/90 px-3 py-2 text-xs font-black text-violet-700 shadow-sm backdrop-blur">
-            {activeProductIndex === 0 ? "BEST PICK" : `PICK 0${activeProductIndex + 1}`}
+            {safeProductIndex === 0 ? "BEST PICK" : `PICK 0${safeProductIndex + 1}`}
           </span>
           {activeProduct.isLive && (
             <span className="absolute right-6 top-6 inline-flex items-center gap-2 rounded-full bg-emerald-500 px-3 py-2 text-xs font-black text-white shadow-lg">
@@ -267,7 +271,7 @@ export default function RecommendationCards({
               type="button"
               onClick={() => setActiveProductIndex(index)}
               className={`flex items-center gap-3 rounded-2xl border p-3 text-left transition ${
-                index === activeProductIndex
+                index === safeProductIndex
                   ? "border-violet-400 bg-white shadow-md"
                   : "border-transparent bg-white/60 hover:border-violet-200 hover:bg-white"
               }`}
@@ -278,7 +282,6 @@ export default function RecommendationCards({
                     src={item.imageUrl}
                     alt=""
                     fill
-                    unoptimized
                     sizes="64px"
                     className="object-contain p-1"
                   />
