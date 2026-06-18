@@ -64,22 +64,36 @@ export default function Hero({
 
   if (compact) {
     return (
-      <section className="sticky top-3 z-40 rounded-3xl border border-white/80 bg-white/85 px-4 py-3 shadow-soft backdrop-blur-xl">
-        <div className="flex items-center gap-4">
+      <>
+        <header className="mini-header-in sticky top-3 z-30 flex items-center justify-between gap-3 rounded-2xl border border-white/80 bg-white/85 px-4 py-2.5 shadow-soft backdrop-blur-xl">
           <button
             type="button"
             onClick={onReset}
-            className="group hidden shrink-0 items-center gap-2 rounded-2xl px-2 py-1.5 transition duration-200 hover:bg-zinc-100 sm:flex"
+            className="group flex shrink-0 items-center gap-2 rounded-xl px-2 py-1.5 transition duration-200 hover:bg-zinc-100"
             aria-label="PickPick 메인 화면으로 돌아가기"
           >
-            <span className="grid h-9 w-9 place-items-center rounded-xl bg-ink text-sm font-semibold text-white transition duration-200 group-hover:-rotate-3 group-hover:scale-105 group-hover:bg-violet-600">
+            <span className="grid h-8 w-8 place-items-center rounded-lg bg-ink text-[13px] font-semibold text-white transition duration-200 group-hover:-rotate-3 group-hover:scale-105 group-hover:bg-violet-600">
               P
             </span>
-            <span className="text-sm font-semibold tracking-tight transition-colors group-hover:text-violet-700">PickPick</span>
+            <span className="text-sm font-semibold tracking-tight transition-colors group-hover:text-violet-700">
+              PickPick
+            </span>
           </button>
-          {input}
+          <button
+            type="button"
+            onClick={onReset}
+            className="rounded-full border border-zinc-200 bg-white px-3 py-1.5 text-xs font-medium text-zinc-600 transition hover:border-violet-300 hover:text-violet-700"
+          >
+            + 새 검색
+          </button>
+        </header>
+
+        <div className="pointer-events-none fixed inset-x-0 bottom-0 z-40">
+          <div className="composer-dock-in pointer-events-auto bg-gradient-to-t from-white via-white/95 to-white/0 px-4 pb-5 pt-10 sm:px-6 sm:pb-6">
+            <div className="page-shell">{input}</div>
+          </div>
         </div>
-      </section>
+      </>
     );
   }
 

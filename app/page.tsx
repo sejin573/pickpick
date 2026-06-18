@@ -88,7 +88,11 @@ export default function Home() {
   const meta = result?.meta;
 
   return (
-    <main className="min-h-screen pb-16 pt-5 sm:pt-8">
+    <main
+      className={`min-h-screen pt-5 sm:pt-8 ${
+        showConversation ? "pb-44 sm:pb-48" : "pb-16"
+      }`}
+    >
       <div className="page-shell">
         <Hero
           message={message}
