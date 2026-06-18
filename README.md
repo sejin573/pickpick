@@ -12,9 +12,17 @@
 
 ![PickPick 메인 화면](docs/images/pickpick-home.png)
 
-### 실제 상품 추천 결과
+### 예산을 지정한 추천 결과
 
-![PickPick 추천 결과 화면](docs/images/pickpick-results.png)
+요청한 `30만원대`를 먼저 보여주고 `20만원대`, `40만원대`를 비교 선택지로 제공합니다.
+
+![PickPick 예산 지정 추천 결과](docs/images/pickpick-results-budget.png)
+
+### 예산을 지정하지 않은 추천 결과
+
+예산이 없으면 `0~30만원`, `30~60만원`, `60~90만원` 범위로 나누어 탐색합니다.
+
+![PickPick 예산 미지정 추천 결과](docs/images/pickpick-results-open-budget.png)
 
 ## 1. 서비스명 및 한 줄 소개
 
