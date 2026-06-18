@@ -99,6 +99,7 @@ export interface RecommendResponse {
   meta?: {
     mode: "fallback" | "llm-enhanced";
     llmProvider?: "openai" | "ollama" | "none";
+    selectionMode?: "rules" | "openai-assisted" | "ollama-assisted";
     catalogProvider?: "sample" | "naver" | "coupang";
     catalogLabel?: string;
     notice?: string;

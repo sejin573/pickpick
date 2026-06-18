@@ -53,7 +53,11 @@ export async function POST(request: Request) {
       fallback.agentSteps[4].description =
         `상황에 맞는 ${fallback.recommendationGroups.length}개 카테고리에서 각각 상위 3개 상품을 선정했습니다.`;
     }
-    const result = await enhanceRecommendation(message, fallback);
+    const result = await enhanceRecommendation(
+      message,
+      fallback,
+      liveCatalog?.groups.slice(0, 3),
+    );
     return NextResponse.json(result);
   } catch {
     return NextResponse.json(

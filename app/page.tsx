@@ -90,7 +90,7 @@ export default function Home() {
                     CATALOG · {(result.meta?.catalogProvider ?? "sample").toUpperCase()}
                   </span>
                   <span className="rounded-full bg-violet-50 px-3 py-1.5 text-violet-700">
-                    COPY · {(result.meta?.llmProvider ?? "rule engine").toUpperCase()}
+                    AGENT · {(result.meta?.selectionMode ?? "rules").toUpperCase()}
                   </span>
                 </div>
               </div>

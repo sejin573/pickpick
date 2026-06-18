@@ -299,6 +299,7 @@ export function fallbackRecommend(
     meta: {
       mode: "fallback",
       llmProvider: "none",
+      selectionMode: "rules",
       catalogProvider: catalogMeta?.provider ?? "sample",
       catalogLabel: catalogMeta?.label ?? "PickPick 샘플 상품",
     },
@@ -306,53 +307,255 @@ export function fallbackRecommend(
 }
 
 type LlmCopy = {
-  reasons?: Array<{ id: string; reason: string; fitFor: string }>;
-  buyingGuide?: BuyingGuide;
+  groupSelections: Array<{
+    groupId: string;
+    subtitle: string;
+    selected: Array<{
+      id: string;
+      reason: string;
+      fitFor: string;
+    }>;
+  }>;
+  buyingGuide: BuyingGuide;
+};
+
+type CandidateGroup = {
+  id: string;
+  title: string;
+  subtitle: string;
+  category: string;
+  products: Product[];
 };
 
 function applyLlmCopy(
+  message: string,
   result: RecommendResponse,
   copy: LlmCopy,
   provider: "openai" | "ollama",
+  candidateGroups?: CandidateGroup[],
 ): RecommendResponse {
+  const analysis = analyzeMessage(message);
+  const enhancedGroups = result.recommendationGroups?.map((group) => {
+    const selection = copy.groupSelections.find(
+      (item) => item.groupId === group.id,
+    );
+    const candidates = candidateGroups?.find(
+      (item) => item.id === group.id,
+    )?.products;
+
+    if (!selection) return group;
+
+    const selectedRecommendations = selection.selected
+      .map((selected) => {
+        const product = candidates?.find((item) => item.id === selected.id);
+        if (!product) {
+          const existing = group.recommendations.find(
+            (item) => item.id === selected.id,
+          );
+          return existing
+            ? {
+                ...existing,
+                reason: selected.reason,
+                fitFor: selected.fitFor,
+              }
+            : null;
+        }
+
+        const scored = scoreProduct(product, analysis, message);
+        return {
+          ...buildRecommendation(
+            product,
+            scored.score,
+            scored.matched,
+            analysis,
+          ),
+          reason: selected.reason,
+          fitFor: selected.fitFor,
+        };
+      })
+      .filter((item): item is Recommendation => Boolean(item));
+
+    return {
+      ...group,
+      subtitle: selection.subtitle || group.subtitle,
+      recommendations:
+        selectedRecommendations.length === 3
+          ? selectedRecommendations
+          : group.recommendations,
+    };
+  });
+
+  const primaryRecommendations =
+    enhancedGroups?.[0]?.recommendations ?? result.recommendations;
+
   return {
     ...result,
-    recommendations: result.recommendations.map((item) => {
-      const revised = copy.reasons?.find((reason) => reason.id === item.id);
-      return revised
-        ? { ...item, reason: revised.reason, fitFor: revised.fitFor }
-        : item;
+    recommendations: primaryRecommendations,
+    recommendationGroups: enhancedGroups,
+    comparison: primaryRecommendations.map((item) => {
+      const source = candidateGroups
+        ?.flatMap((group) => group.products)
+        .find((product) => product.id === item.id);
+      return {
+        name: item.name,
+        price: item.price,
+        purposeFit: item.score,
+        practicality: source?.practicalScore ?? 80,
+        emotional: source?.emotionalScore ?? 75,
+        value: source?.valueScore ?? 80,
+        risk: source?.riskScore ?? 24,
+      };
     }),
-    buyingGuide: copy.buyingGuide ?? result.buyingGuide,
+    buyingGuide: copy.buyingGuide,
     meta: {
       ...result.meta,
       mode: "llm-enhanced",
       llmProvider: provider,
+      selectionMode:
+        provider === "openai" ? "openai-assisted" : "ollama-assisted",
     },
   };
 }
 
-function llmPrompt(message: string, result: RecommendResponse) {
+function llmPrompt(
+  message: string,
+  result: RecommendResponse,
+  candidateGroups?: CandidateGroup[],
+) {
+  const analysis = analyzeMessage(message);
+  const groups = candidateGroups?.slice(0, 3).map((group) => ({
+    id: group.id,
+    title: group.title,
+    category: group.category,
+    currentSubtitle: group.subtitle,
+    candidates: group.products
+      .map((product) => ({
+        product,
+        score: scoreProduct(product, analysis, message).score,
+      }))
+      .sort((a, b) => b.score - a.score)
+      .slice(0, 6)
+      .map(({ product, score }) => ({
+        id: product.id,
+        name: product.name,
+        price: product.price,
+        brand: product.brand ?? "",
+        category: product.category,
+        codeScore: score,
+        strengths: product.strengths.slice(0, 2),
+        cautions: product.cautions.slice(0, 1),
+      })),
+  })) ?? result.recommendationGroups?.map((group) => ({
+    id: group.id,
+    title: group.title,
+    category: group.category,
+    currentSubtitle: group.subtitle,
+    candidates: group.recommendations.map((item) => ({
+      id: item.id,
+      name: item.name,
+      price: item.price,
+      brand: item.brand ?? "",
+      category: item.category,
+      codeScore: item.score,
+      strengths: item.pros.slice(0, 2),
+      cautions: item.cons.slice(0, 1),
+    })),
+  })) ?? [{
+    id: "top-picks",
+    title: "추천",
+    category: "추천",
+    currentSubtitle: "",
+    candidates: result.recommendations.map((item) => ({
+      id: item.id,
+      name: item.name,
+      price: item.price,
+      brand: item.brand ?? "",
+      category: item.category,
+      codeScore: item.score,
+      strengths: item.pros.slice(0, 2),
+      cautions: item.cons.slice(0, 1),
+    })),
+  }];
+
   return JSON.stringify({
-    instruction:
-      "상품 순서, 상품명, 링크, 가격, 점수는 바꾸지 말고 한국어 추천 이유와 구매 가이드 문장만 자연스럽게 다듬어라. 반드시 JSON만 반환한다.",
     request: message,
-    requiredShape: {
-      reasons: [{ id: "상품 id", reason: "추천 이유", fitFor: "적합한 사용자" }],
-      buyingGuide: {
-        bestChoice: "문장",
-        buyNowIf: ["문장"],
-        thinkMoreIf: ["문장"],
-        checkBeforeBuying: ["문장"],
-      },
-    },
-    result,
+    analysis: result.analysis,
+    groups,
   });
 }
+
+const recommendationSchema = {
+  type: "object",
+  additionalProperties: false,
+  properties: {
+    groupSelections: {
+      type: "array",
+      minItems: 1,
+      maxItems: 3,
+      items: {
+        type: "object",
+        additionalProperties: false,
+        properties: {
+          groupId: { type: "string" },
+          subtitle: { type: "string" },
+          selected: {
+            type: "array",
+            minItems: 3,
+            maxItems: 3,
+            items: {
+              type: "object",
+              additionalProperties: false,
+              properties: {
+                id: { type: "string" },
+                reason: { type: "string" },
+                fitFor: { type: "string" },
+              },
+              required: ["id", "reason", "fitFor"],
+            },
+          },
+        },
+        required: ["groupId", "subtitle", "selected"],
+      },
+    },
+    buyingGuide: {
+      type: "object",
+      additionalProperties: false,
+      properties: {
+        bestChoice: { type: "string" },
+        buyNowIf: {
+          type: "array",
+          minItems: 3,
+          maxItems: 3,
+          items: { type: "string" },
+        },
+        thinkMoreIf: {
+          type: "array",
+          minItems: 3,
+          maxItems: 3,
+          items: { type: "string" },
+        },
+        checkBeforeBuying: {
+          type: "array",
+          minItems: 3,
+          maxItems: 3,
+          items: { type: "string" },
+        },
+      },
+      required: [
+        "bestChoice",
+        "buyNowIf",
+        "thinkMoreIf",
+        "checkBeforeBuying",
+      ],
+    },
+  },
+  required: ["groupSelections", "buyingGuide"],
+} as const;
 
 async function enhanceWithOpenAI(
   message: string,
   result: RecommendResponse,
+  candidateGroups?: CandidateGroup[],
 ): Promise<RecommendResponse> {
   const apiKey = process.env.OPENAI_API_KEY;
   if (!apiKey) return result;
@@ -365,23 +568,32 @@ async function enhanceWithOpenAI(
         Authorization: `Bearer ${apiKey}`,
       },
       body: JSON.stringify({
-        model: "gpt-5.4-mini",
+        model: process.env.OPENAI_MODEL ?? "gpt-5.4-mini",
         store: false,
         reasoning: { effort: "low" },
-        text: { format: { type: "json_object" }, verbosity: "low" },
+        text: {
+          format: {
+            type: "json_schema",
+            name: "pickpick_recommendation",
+            strict: true,
+            schema: recommendationSchema,
+          },
+          verbosity: "low",
+        },
         input: [
           {
             role: "developer",
             content:
-              "당신은 한국어 쇼핑 카피 에디터다. 상품 순서, 가격, 점수는 바꾸지 말고 추천 이유와 구매 가이드 문장만 자연스럽게 다듬는다. 반드시 JSON만 반환한다.",
+              "당신은 한국어 커머스 추천 에이전트다. 각 그룹의 실제 후보 중 사용자 요청에 가장 적합한 상품 ID 정확히 3개를 고른다. 코드 점수는 참고하되 대상·상황·활용도·선물 적합성을 함께 비교한다. 제공된 후보에 없는 상품이나 사실을 만들지 않고 가격·상품명을 변경하지 않는다. 의료 효과를 단정하지 않는다. 그룹 부제는 35자 이내, 추천 이유는 구체적인 한 문장, fitFor는 25자 이내로 간결하게 쓴다. 구매 가이드 각 항목도 한 문장으로 쓴다.",
           },
           {
             role: "user",
-            content: llmPrompt(message, result),
+            content: llmPrompt(message, result, candidateGroups),
           },
         ],
+        max_output_tokens: 2200,
       }),
-      signal: AbortSignal.timeout(8000),
+      signal: AbortSignal.timeout(18000),
     });
 
     if (!response.ok) return result;
@@ -397,7 +609,13 @@ async function enhanceWithOpenAI(
     if (!content) return result;
     const copy = JSON.parse(content) as LlmCopy;
 
-    return applyLlmCopy(result, copy, "openai");
+    return applyLlmCopy(
+      message,
+      result,
+      copy,
+      "openai",
+      candidateGroups,
+    );
   } catch {
     return result;
   }
@@ -406,6 +624,7 @@ async function enhanceWithOpenAI(
 async function enhanceWithOllama(
   message: string,
   result: RecommendResponse,
+  candidateGroups?: CandidateGroup[],
 ): Promise<RecommendResponse> {
   const baseUrl = process.env.OLLAMA_BASE_URL?.replace(/\/$/, "");
   if (!baseUrl) return result;
@@ -423,7 +642,10 @@ async function enhanceWithOllama(
         model: process.env.OLLAMA_MODEL ?? "qwen3:4b",
         stream: false,
         format: "json",
-        messages: [{ role: "user", content: llmPrompt(message, result) }],
+        messages: [{
+          role: "user",
+          content: llmPrompt(message, result, candidateGroups),
+        }],
         options: { temperature: 0.3 },
       }),
       signal: AbortSignal.timeout(12000),
@@ -435,9 +657,11 @@ async function enhanceWithOllama(
     };
     if (!data.message?.content) return result;
     return applyLlmCopy(
+      message,
       result,
       JSON.parse(data.message.content) as LlmCopy,
       "ollama",
+      candidateGroups,
     );
   } catch {
     return result;
@@ -447,12 +671,13 @@ async function enhanceWithOllama(
 export async function enhanceRecommendation(
   message: string,
   result: RecommendResponse,
+  candidateGroups?: CandidateGroup[],
 ): Promise<RecommendResponse> {
   const preferred = (process.env.LLM_PROVIDER ?? "openai").toLowerCase();
   const enhanced =
     preferred === "ollama"
-      ? await enhanceWithOllama(message, result)
-      : await enhanceWithOpenAI(message, result);
+      ? await enhanceWithOllama(message, result, candidateGroups)
+      : await enhanceWithOpenAI(message, result, candidateGroups);
 
   if (enhanced.meta?.mode === "llm-enhanced") return enhanced;
 
