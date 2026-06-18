@@ -706,7 +706,12 @@ export async function searchLiveProducts(
         );
         if (!response.ok) return [];
         const data = (await response.json()) as NaverShoppingResponse;
-        return (data.items ?? []).map((item) => ({ item, query, groupId: group.id }));
+        return (data.items ?? []).map((item, rank) => ({
+          item,
+          query,
+          groupId: group.id,
+          rank,
+        }));
       })),
     );
 
@@ -722,8 +727,8 @@ export async function searchLiveProducts(
         seen.add(key);
         return true;
       })
-      .map(({ item, query, groupId }) => ({
-        product: mapNaverItem(item, query),
+      .map(({ item, query, groupId, rank }) => ({
+        product: { ...mapNaverItem(item, query), popularityRank: rank },
         groupId,
       }))
       .filter(({ product }) => product.price > 0 && product.productUrl);

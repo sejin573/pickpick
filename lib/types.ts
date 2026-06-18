@@ -28,6 +28,7 @@ export interface Product {
   brand?: string;
   source?: "sample" | "naver" | "coupang";
   isLive?: boolean;
+  popularityRank?: number;
 }
 
 export interface UserAnalysis {

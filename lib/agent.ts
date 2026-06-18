@@ -148,6 +148,23 @@ function contextualBudgetScore(
   return budgetScore(price, budget, message.includes("이하"));
 }
 
+const MAJOR_MALLS = [
+  "쿠팡",
+  "11번가",
+  "지마켓",
+  "G마켓",
+  "Gmarket",
+  "옥션",
+  "위메프",
+  "티몬",
+  "롯데",
+  "SSG",
+  "이마트",
+  "인터파크",
+  "신세계",
+  "네이버",
+];
+
 function scoreProduct(
   product: Product,
   analysis: UserAnalysis,
@@ -174,6 +191,21 @@ function scoreProduct(
   if (analysis.preferences.includes("감성")) score += product.emotionalScore * 0.08;
   if (analysis.preferences.includes("가성비")) score += product.valueScore * 0.08;
   if (analysis.keywords.includes("선물")) score += product.emotionalScore * 0.04;
+
+  if (typeof product.popularityRank === "number") {
+    score += Math.max(0, 24 - product.popularityRank * 0.5);
+  }
+
+  if (product.mallName) {
+    const mall = product.mallName;
+    if (MAJOR_MALLS.some((name) => mall.includes(name))) {
+      score += 7;
+    }
+  }
+
+  if (product.brand && product.brand.length > 0) {
+    score += 3;
+  }
 
   return {
     score: Math.max(0, Math.min(100, Math.round(score))),
