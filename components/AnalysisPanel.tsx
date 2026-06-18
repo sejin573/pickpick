@@ -1,11 +1,11 @@
 import { RecommendResponse } from "@/lib/types";
 
-const labels: Record<string, string> = {
-  intent: "구매 목적",
-  target: "추천 대상",
-  budget: "예산",
-  occasion: "상황",
-};
+const cardItems = [
+  { key: "intent" as const, label: "구매 목적" },
+  { key: "target" as const, label: "추천 대상" },
+  { key: "budget" as const, label: "예산" },
+  { key: "occasion" as const, label: "상황" },
+];
 
 export default function AnalysisPanel({
   analysis,
@@ -13,43 +13,80 @@ export default function AnalysisPanel({
   analysis: RecommendResponse["analysis"];
 }) {
   return (
-    <section className="surface overflow-hidden">
-      <div className="flex flex-col justify-between gap-5 border-b border-zinc-100 p-6 sm:flex-row sm:items-center sm:p-8">
-        <div>
-          <p className="eyebrow">Request brief</p>
-          <h2 className="mt-2 text-2xl font-black tracking-tight">이 조건으로 찾아봤어요</h2>
-        </div>
-        <span className="inline-flex w-fit items-center gap-2 rounded-full bg-emerald-50 px-4 py-2 text-xs font-black text-emerald-700">
-          <i className="h-2 w-2 rounded-full bg-emerald-500" />
-          분석 완료
-        </span>
-      </div>
-      <div className="grid sm:grid-cols-2 lg:grid-cols-4">
-        {(["intent", "target", "budget", "occasion"] as const).map((key) => (
-          <div key={key} className="border-b border-zinc-100 p-5 sm:p-6 lg:border-b-0 lg:border-r last:lg:border-r-0">
-            <p className="text-[11px] font-black uppercase tracking-wider text-zinc-400">{labels[key]}</p>
-            <p className="mt-2 text-sm font-black leading-6 text-zinc-800">{analysis[key]}</p>
+    <div className="flex items-start gap-3">
+      <span className="grid h-9 w-9 shrink-0 place-items-center rounded-xl bg-ink text-[13px] font-semibold text-white">
+        P
+      </span>
+      <div className="min-w-0 flex-1">
+        <p className="text-[11px] font-medium tracking-[0.18em] text-violet-500">
+          PICKPICK AGENT · 요청 정리
+        </p>
+        <div className="mt-1.5 overflow-hidden rounded-2xl rounded-tl-md border border-zinc-100 bg-white shadow-sm">
+          <div className="px-5 pt-5 pb-4 sm:px-6 sm:pt-6">
+            <p className="text-[15px] leading-7 text-zinc-700">
+              요청을 이렇게 정리했어요.{" "}
+              <span className="font-semibold text-ink">{analysis.target}</span>
+              을(를) 위한{" "}
+              <span className="font-semibold text-ink">{analysis.occasion}</span>{" "}
+              상황에서{" "}
+              <span className="font-semibold text-ink">{analysis.budget}</span>{" "}
+              예산을 기준으로 찾아봤어요.
+            </p>
           </div>
-        ))}
-      </div>
-      <div className="grid gap-5 bg-zinc-50/70 p-5 sm:grid-cols-2 sm:p-6">
-        <div>
-          <p className="mb-3 text-xs font-black text-zinc-500">추천에 반영한 포인트</p>
-          <div className="flex flex-wrap gap-2">
-            {analysis.preferences.map((item) => <span key={item} className="chip">{item}</span>)}
-          </div>
-        </div>
-        <div>
-          <p className="mb-3 text-xs font-black text-zinc-500">가격 및 제약 조건</p>
-          <div className="flex flex-wrap gap-2">
-            {analysis.constraints.map((item) => (
-              <span key={item} className="rounded-full bg-zinc-100 px-3 py-1.5 text-xs font-semibold text-zinc-600">
-                {item}
-              </span>
+
+          <div className="grid grid-cols-2 gap-px bg-zinc-100 sm:grid-cols-4">
+            {cardItems.map(({ key, label }) => (
+              <div key={key} className="bg-white p-4 sm:px-5 sm:py-4">
+                <p className="text-[10px] font-medium tracking-[0.16em] text-zinc-400">
+                  {label.toUpperCase()}
+                </p>
+                <p className="mt-1.5 text-sm font-semibold leading-5 text-zinc-800">
+                  {analysis[key]}
+                </p>
+              </div>
             ))}
           </div>
+
+          {(analysis.preferences.length > 0 || analysis.constraints.length > 0) && (
+            <div className="grid gap-5 border-t border-zinc-100 bg-zinc-50/60 px-5 py-5 sm:grid-cols-2 sm:px-6">
+              {analysis.preferences.length > 0 && (
+                <div>
+                  <p className="text-xs font-medium text-zinc-500">
+                    반영한 포인트
+                  </p>
+                  <div className="mt-2 flex flex-wrap gap-1.5">
+                    {analysis.preferences.map((item) => (
+                      <span
+                        key={item}
+                        className="rounded-full bg-violet-50 px-2.5 py-1 text-xs font-medium text-violet-700"
+                      >
+                        {item}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              )}
+              {analysis.constraints.length > 0 && (
+                <div>
+                  <p className="text-xs font-medium text-zinc-500">
+                    가격·제약 조건
+                  </p>
+                  <div className="mt-2 flex flex-wrap gap-1.5">
+                    {analysis.constraints.map((item) => (
+                      <span
+                        key={item}
+                        className="rounded-full bg-white px-2.5 py-1 text-xs font-medium text-zinc-600 ring-1 ring-zinc-200"
+                      >
+                        {item}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
         </div>
       </div>
-    </section>
+    </div>
   );
 }
