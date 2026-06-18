@@ -57,6 +57,7 @@ export default function Home() {
           message={message}
           loading={loading}
           error={error}
+          compact={Boolean(result)}
           onMessageChange={setMessage}
           onSubmit={requestRecommendation}
         />
@@ -100,12 +101,10 @@ export default function Home() {
               <BuyingGuide guide={result.buyingGuide} />
               <ServiceInfo onSelect={selectPrompt} />
             </>
-          ) : (
-            <ServiceInfo onSelect={selectPrompt} />
-          )}
+          ) : null}
         </div>
 
-        <footer className="mt-12 border-t border-violet-100 pt-7 text-center text-xs leading-5 text-zinc-500">
+        <footer className={`${result ? "mt-12 border-t border-violet-100 pt-7" : "-mt-12 pb-3"} text-center text-xs leading-5 text-zinc-500`}>
           <p className="font-bold text-zinc-700">PickPick</p>
           <p className="mt-1">상품 선택의 부담을 줄이는 상황 기반 AI 커머스 에이전트 프로토타입</p>
         </footer>

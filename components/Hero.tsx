@@ -4,6 +4,7 @@ interface HeroProps {
   message: string;
   loading: boolean;
   error: string;
+  compact?: boolean;
   onMessageChange: (message: string) => void;
   onSubmit: () => void;
 }
@@ -12,97 +13,108 @@ export default function Hero({
   message,
   loading,
   error,
+  compact = false,
   onMessageChange,
   onSubmit,
 }: HeroProps) {
-  return (
-    <section className="overflow-hidden rounded-[2rem] bg-ink text-white shadow-2xl shadow-violet-950/20">
-      <div className="grid lg:grid-cols-[1.15fr_0.85fr]">
-        <div className="p-7 sm:p-12 lg:p-16">
-          <div className="mb-9 flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <span className="grid h-10 w-10 place-items-center rounded-xl bg-violet-500 font-black">
-                Z
-              </span>
-              <span className="text-sm font-bold tracking-wide">PickPick</span>
-            </div>
-            <span className="rounded-full border border-white/15 px-3 py-1.5 text-[11px] font-semibold text-violet-200">
-              AI COMMERCE AGENT
+  const input = (
+    <div className={`mx-auto w-full ${compact ? "max-w-4xl" : "max-w-3xl"}`}>
+      <div className="flex items-end gap-2 rounded-[1.75rem] border border-zinc-200 bg-white p-2.5 shadow-[0_14px_50px_rgba(24,18,50,0.10)] transition focus-within:border-violet-300 focus-within:shadow-[0_18px_60px_rgba(92,65,180,0.14)]">
+        <span className="mb-1 grid h-10 w-10 shrink-0 place-items-center rounded-full text-2xl font-light text-zinc-600">
+          +
+        </span>
+        <textarea
+          value={message}
+          onChange={(event) => onMessageChange(event.target.value)}
+          onKeyDown={(event) => {
+            if (event.key === "Enter" && !event.shiftKey) {
+              event.preventDefault();
+              onSubmit();
+            }
+          }}
+          rows={compact ? 1 : 2}
+          placeholder="누구를 위한 어떤 상품을 찾고 있나요?"
+          className="max-h-40 min-h-11 flex-1 resize-none border-0 bg-transparent px-1 py-3 text-[15px] leading-6 text-ink outline-none placeholder:text-zinc-400"
+          aria-label="추천 상황 입력"
+        />
+        <button
+          type="button"
+          onClick={onSubmit}
+          disabled={loading}
+          aria-label="추천 요청 보내기"
+          className="grid h-11 w-11 shrink-0 place-items-center rounded-full bg-ink text-lg font-black text-white transition hover:bg-violet-600 disabled:cursor-wait disabled:opacity-70"
+        >
+          {loading ? (
+            <span className="flex gap-0.5">
+              <i className="loading-dot h-1 w-1 rounded-full bg-white" />
+              <i className="loading-dot h-1 w-1 rounded-full bg-white" />
+              <i className="loading-dot h-1 w-1 rounded-full bg-white" />
             </span>
-          </div>
-
-          <p className="text-sm font-bold text-violet-300">생각은 가볍게, 선택은 선명하게</p>
-          <h1 className="mt-4 max-w-2xl text-4xl font-black leading-[1.1] tracking-[-0.04em] sm:text-6xl">
-            상황을 이해하고
-            <br />
-            <span className="text-violet-400">구매 결정을 돕는</span>
-            <br />
-            AI 쇼핑 에이전트
-          </h1>
-          <p className="mt-6 max-w-xl text-base leading-7 text-zinc-300">
-            예산과 대상, 취향을 따로 고르지 마세요. 평소 말하듯 입력하면
-            상품 비교부터 구매 전 체크포인트까지 한 번에 정리해 드립니다.
-          </p>
-
-          <div className="mt-9 rounded-3xl bg-white p-2 shadow-xl">
-            <textarea
-              value={message}
-              onChange={(event) => onMessageChange(event.target.value)}
-              onKeyDown={(event) => {
-                if (event.key === "Enter" && !event.shiftKey) {
-                  event.preventDefault();
-                  onSubmit();
-                }
-              }}
-              rows={3}
-              placeholder="예: 여행 좋아하는 친구에게 줄 10만원대 선물 추천해줘"
-              className="w-full resize-none rounded-2xl border-0 px-4 py-3 text-sm leading-6 text-ink outline-none placeholder:text-zinc-400"
-              aria-label="추천 상황 입력"
-            />
-            <div className="flex items-center justify-between gap-3 px-2 pb-1">
-              <span className="hidden text-xs text-zinc-400 sm:block">
-                Enter로 추천 · Shift + Enter로 줄바꿈
-              </span>
-              <button
-                type="button"
-                onClick={onSubmit}
-                disabled={loading}
-                className="ml-auto inline-flex min-w-32 items-center justify-center gap-2 rounded-xl bg-violet-600 px-5 py-3 text-sm font-bold text-white transition hover:bg-violet-700 disabled:cursor-wait disabled:opacity-70"
-              >
-                {loading ? (
-                  <>
-                    분석 중
-                    <span className="flex gap-1">
-                      <i className="loading-dot h-1 w-1 rounded-full bg-white" />
-                      <i className="loading-dot h-1 w-1 rounded-full bg-white" />
-                      <i className="loading-dot h-1 w-1 rounded-full bg-white" />
-                    </span>
-                  </>
-                ) : (
-                  <>추천 받기 <span aria-hidden>→</span></>
-                )}
-              </button>
-            </div>
-          </div>
-          {error && (
-            <p role="alert" className="mt-3 text-sm font-medium text-red-300">
-              {error}
-            </p>
+          ) : (
+            <span aria-hidden>↑</span>
           )}
-        </div>
+        </button>
+      </div>
+      {error && (
+        <p role="alert" className="mt-3 text-center text-sm font-semibold text-red-500">
+          {error}
+        </p>
+      )}
+    </div>
+  );
 
-        <aside className="border-t border-white/10 bg-violet-950/70 p-7 sm:p-10 lg:border-l lg:border-t-0 lg:p-12">
-          <p className="eyebrow !text-violet-300">TRY A PROMPT</p>
-          <h2 className="mt-3 text-2xl font-bold">어떻게 물어볼지 고민된다면</h2>
-          <p className="mb-6 mt-2 text-sm leading-6 text-violet-200/80">
-            아래 예시를 눌러 바로 체험해 보세요.
-          </p>
-          <PromptExamples onSelect={onMessageChange} />
-          <div className="mt-8 flex items-center gap-3 border-t border-white/10 pt-6 text-xs text-violet-200">
-            <span className="h-2 w-2 rounded-full bg-emerald-400 shadow-[0_0_12px_#34d399]" />
-            API 키 없이도 내장 에이전트가 정상 동작합니다.
-          </div>
-        </aside>
+  if (compact) {
+    return (
+      <section className="sticky top-3 z-40 rounded-3xl border border-white/80 bg-white/85 px-4 py-3 shadow-soft backdrop-blur-xl">
+        <div className="flex items-center gap-4">
+          <a href="#" className="hidden shrink-0 items-center gap-2 sm:flex">
+            <span className="grid h-9 w-9 place-items-center rounded-xl bg-ink text-sm font-black text-white">
+              P
+            </span>
+            <span className="text-sm font-black">PickPick</span>
+          </a>
+          {input}
+        </div>
+      </section>
+    );
+  }
+
+  return (
+    <section className="relative flex min-h-[82vh] flex-col">
+      <header className="flex items-center justify-between py-3">
+        <div className="flex items-center gap-2.5">
+          <span className="grid h-10 w-10 place-items-center rounded-2xl bg-ink text-sm font-black text-white">
+            P
+          </span>
+          <span className="font-black tracking-tight">PickPick</span>
+        </div>
+        <span className="rounded-full border border-zinc-200 bg-white px-3 py-1.5 text-[11px] font-bold text-zinc-500">
+          LIVE SHOPPING AGENT
+        </span>
+      </header>
+
+      <div className="flex flex-1 flex-col items-center justify-center pb-16 pt-12 text-center">
+        <span className="mb-6 grid h-14 w-14 place-items-center rounded-2xl bg-violet-600 text-2xl text-white shadow-lg shadow-violet-200">
+          ✦
+        </span>
+        <p className="text-sm font-black text-violet-600">선택이 어려울 땐, 편하게 말해보세요</p>
+        <h1 className="mt-3 text-3xl font-black tracking-[-0.04em] text-ink sm:text-5xl">
+          어떤 상품을 찾고 있나요?
+        </h1>
+        <p className="mt-4 max-w-xl text-sm leading-7 text-zinc-500 sm:text-base">
+          대상과 상황, 예산을 한 문장으로 알려주면 실제 판매 상품을
+          카테고리별로 비교해 드려요.
+        </p>
+
+        <div className="mt-9 w-full">{input}</div>
+
+        <div className="mt-5 flex max-w-3xl flex-wrap justify-center gap-2">
+          <PromptExamples onSelect={onMessageChange} compact />
+        </div>
+        <p className="mt-6 flex items-center gap-2 text-xs text-zinc-400">
+          <i className="h-2 w-2 rounded-full bg-emerald-500" />
+          네이버 쇼핑의 실제 판매 상품과 가격을 확인합니다
+        </p>
       </div>
     </section>
   );
