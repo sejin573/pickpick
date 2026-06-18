@@ -118,7 +118,7 @@ export default function Home() {
           <p className="font-bold text-zinc-700">PickPick</p>
           <p className="mt-1">상품 선택의 부담을 줄이는 상황 기반 AI 커머스 에이전트 프로토타입</p>
           <p className="mt-2 text-[11px] font-medium text-zinc-400">
-            Created by 장세진
+            Created by sejin573 (장세진)
           </p>
         </footer>
       </div>
