@@ -75,6 +75,22 @@ textarea {
   animation-delay: 0.3s;
 }
 
+.loading-logo {
+  animation: loading-pulse 1.8s ease-in-out infinite;
+}
+
+.loading-orbit {
+  animation: loading-spin 8s linear infinite;
+}
+
+.loading-orbit-reverse {
+  animation: loading-spin-reverse 6s linear infinite;
+}
+
+.loading-stage {
+  animation: loading-stage-in 0.35s ease-out;
+}
+
 .product-slide {
   animation: product-fade 0.45s ease-out;
 }
@@ -98,6 +114,24 @@ textarea {
 @keyframes product-progress {
   from { transform: scaleX(0); }
   to { transform: scaleX(1); }
+}
+
+@keyframes loading-pulse {
+  0%, 100% { transform: scale(1) rotate(0); }
+  50% { transform: scale(1.06) rotate(3deg); }
+}
+
+@keyframes loading-spin {
+  to { transform: rotate(360deg); }
+}
+
+@keyframes loading-spin-reverse {
+  to { transform: rotate(-360deg); }
+}
+
+@keyframes loading-stage-in {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: translateY(0); }
 }
 
 @keyframes bounce {

@@ -7,6 +7,7 @@ import AnalysisPanel from "@/components/AnalysisPanel";
 import BuyingGuide from "@/components/BuyingGuide";
 import ComparisonTable from "@/components/ComparisonTable";
 import Hero from "@/components/Hero";
+import LoadingOverlay from "@/components/LoadingOverlay";
 import RecommendationCards from "@/components/RecommendationCards";
 import ServiceInfo from "@/components/ServiceInfo";
 import { RecommendResponse } from "@/lib/types";
@@ -59,6 +60,7 @@ export default function Home() {
 
   return (
     <main className="min-h-screen pb-16 pt-5 sm:pt-8">
+      <LoadingOverlay visible={loading} />
       <div className="page-shell">
         <Hero
           message={message}
