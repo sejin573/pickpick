@@ -375,6 +375,55 @@ function isLowQualityItem(item: NaverShoppingItem): boolean {
   ].some((keyword) => text.includes(keyword));
 }
 
+const productTermGroups: string[][] = [
+  ["노트북", "랩탑", "맥북"],
+  ["모니터", "디스플레이"],
+  ["키보드"],
+  ["헤드폰", "헤드셋"],
+  ["이어폰"],
+  ["의자", "체어"],
+  ["모니터암", "모니터 암"],
+  ["스탠딩 데스크", "높이조절 책상", "높이 조절 책상"],
+  ["향수", "오드퍼퓸", "오드뚜왈렛"],
+  ["목걸이", "네크리스"],
+  ["가방", "백"],
+  ["지갑"],
+  ["에어랩", "에어 스타일러", "스타일러"],
+  ["스마트워치", "애플워치", "갤럭시워치"],
+  ["빔프로젝터", "프로젝터"],
+  ["포토 프린터", "포토프린터"],
+  ["커피머신", "에스프레소 머신"],
+  ["마사지기", "안마기", "마사지건"],
+  ["혈압계"],
+  ["캐리어", "여행가방"],
+  ["카메라"],
+  ["보조배터리"],
+  ["청소기"],
+  ["공기청정기"],
+  ["에어프라이어"],
+  ["전자레인지"],
+  ["조명", "무드등"],
+  ["스피커"],
+];
+
+function isRelevantToQuery(item: NaverShoppingItem, query: string): boolean {
+  const searchable = stripHtml([
+    item.title,
+    item.category1,
+    item.category2,
+    item.category3,
+    item.category4,
+  ].join(" ")).toLowerCase();
+  const normalizedQuery = query.toLowerCase();
+
+  const requiredGroup = productTermGroups.find((terms) =>
+    terms.some((term) => normalizedQuery.includes(term)),
+  );
+  if (!requiredGroup) return true;
+
+  return requiredGroup.some((term) => searchable.includes(term));
+}
+
 function isInBudgetRange(
   item: NaverShoppingItem,
   message: string,
@@ -473,6 +522,7 @@ export async function searchLiveProducts(
     const mapped = responses
       .flat()
       .filter(({ item }) => !isLowQualityItem(item))
+      .filter(({ item, query }) => isRelevantToQuery(item, query))
       .filter(({ item }) => isInBudgetRange(item, message, analysis.budgetValue))
       .filter(({ item }) => {
         const key = item.productId || `${stripHtml(item.title)}-${item.lprice}`;
