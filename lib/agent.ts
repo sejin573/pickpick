@@ -119,9 +119,11 @@ function contextualBudgetScore(
   if (!budget) return 12;
   const ratio = price / budget;
 
-  if (message.match(/\d+(?:\.\d+)?\s*만원대/)) {
-    if (ratio >= 0.75 && ratio <= 1.25) return 30;
-    if (ratio >= 0.5 && ratio <= 1.5) return 18;
+  const priceBand = message.match(/(\d+)\s*만원대/);
+  if (priceBand) {
+    const amount = priceBand[1];
+    const bandSize = 10 ** Math.max(0, amount.length - 1) * 10000;
+    if (price >= budget && price < budget + bandSize) return 30;
     return -35;
   }
 

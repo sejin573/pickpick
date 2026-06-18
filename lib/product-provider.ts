@@ -126,8 +126,11 @@ function isInBudgetRange(
   if (!price) return false;
 
   if (message.includes("이하")) return price <= budget && price >= budget * 0.15;
-  if (message.match(/\d+(?:\.\d+)?\s*만원대/)) {
-    return price >= budget * 0.5 && price <= budget * 1.5;
+  const priceBand = message.match(/(\d+)\s*만원대/);
+  if (priceBand) {
+    const amount = priceBand[1];
+    const bandSize = 10 ** Math.max(0, amount.length - 1) * 10000;
+    return price >= budget && price < budget + bandSize;
   }
   return price >= budget * 0.3 && price <= budget * 1.35;
 }
