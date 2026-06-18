@@ -27,6 +27,11 @@ const keywordGroups: Record<string, string[]> = {
     "놀거", "놀 것", "놀고 싶", "일하기 싫", "심심", "스트레스",
     "쉬고 싶", "힐링", "재미있는", "재밌는", "취미",
   ],
+  "피로 회복": ["피곤", "지쳤", "피로", "힘들", "뻐근", "쉬어야", "휴식 필요"],
+  "집중": ["집중", "공부하기 싫", "일이 안", "능률", "생산성", "몰입"],
+  "수면": ["잠이 안", "불면", "잘 자고", "숙면", "잠 좀", "수면"],
+  "운동": ["운동하고", "살 빼", "다이어트", "몸 만들", "홈트", "헬스"],
+  "요리/먹거리": ["배고", "뭐 먹", "요리", "간식", "커피 마시", "홈카페"],
 };
 
 const formatWon = (value: number) =>
@@ -63,6 +68,11 @@ function inferTarget(keywords: string[]): string {
 
 function inferOccasion(message: string, keywords: string[]): string {
   if (keywords.includes("휴식/놀이")) return "휴식/놀이";
+  if (keywords.includes("피로 회복")) return "피로 회복";
+  if (keywords.includes("집중")) return "집중/생산성";
+  if (keywords.includes("수면")) return "수면 개선";
+  if (keywords.includes("운동")) return "운동/건강 관리";
+  if (keywords.includes("요리/먹거리")) return "식사/홈카페";
   if (message.includes("생일")) return "생일";
   if (message.includes("기념일")) return "기념일";
   if (message.includes("집들이") || message.includes("자취")) return "자취/집들이";
@@ -75,7 +85,10 @@ function inferOccasion(message: string, keywords: string[]): string {
 export function analyzeMessage(message: string): UserAnalysis {
   const budgetValue = extractBudget(message);
   const keywords = extractKeywords(message);
-  const preferences = ["실용", "감성", "가성비", "건강", "뷰티", "여행", "개발", "휴식/놀이"]
+  const preferences = [
+    "실용", "감성", "가성비", "건강", "뷰티", "여행", "개발",
+    "휴식/놀이", "피로 회복", "집중", "수면", "운동", "요리/먹거리",
+  ]
     .filter((keyword) => keywords.includes(keyword));
   const constraints: string[] = [];
 

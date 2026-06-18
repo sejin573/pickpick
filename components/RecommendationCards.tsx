@@ -106,7 +106,7 @@ export default function RecommendationCards({
             />
           ) : (
             <div className="grid h-full min-h-[360px] place-items-center">
-              <span className="grid h-28 w-28 place-items-center rounded-[2.25rem] bg-white text-5xl shadow-soft">
+              <span className="grid h-28 w-28 cursor-default place-items-center rounded-[2.25rem] bg-white text-5xl shadow-soft transition duration-300 hover:-translate-y-1 hover:rotate-6 hover:scale-105 hover:text-violet-600 hover:shadow-xl">
                 ✦
               </span>
             </div>

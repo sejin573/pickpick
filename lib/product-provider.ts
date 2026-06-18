@@ -66,6 +66,136 @@ function inferCategory(text: string): ProductCategory {
 }
 
 function buildSearchGroups(message: string, analysis: UserAnalysis): SearchGroup[] {
+  if (analysis.keywords.includes("피로 회복")) {
+    return [
+      {
+        id: "recovery-body",
+        title: "몸의 긴장을 풀어주는 회복 아이템",
+        subtitle: "뻐근한 몸을 편하게 풀며 짧게 쉬어갈 수 있어요.",
+        category: "마사지/온열",
+        queries: ["목 어깨 마사지기", "마사지건", "온열 찜질기"],
+      },
+      {
+        id: "recovery-rest",
+        title: "집에서 만드는 편안한 휴식",
+        subtitle: "빛과 향, 소리로 퇴근 후 휴식 환경을 만들어요.",
+        category: "홈/힐링",
+        queries: ["수면 무드등", "아로마 디퓨저", "블루투스 스피커"],
+      },
+      {
+        id: "recovery-sleep",
+        title: "오늘 밤 잘 자기 위한 준비",
+        subtitle: "수면 환경을 정돈해 다음 날의 컨디션을 챙겨요.",
+        category: "수면",
+        queries: ["수면 조명", "메모리폼 베개", "백색소음기"],
+      },
+    ];
+  }
+
+  if (analysis.keywords.includes("집중")) {
+    return [
+      {
+        id: "focus-audio",
+        title: "방해를 줄이는 집중 장비",
+        subtitle: "소음과 알림을 줄여 몰입할 수 있는 환경을 만들어요.",
+        category: "집중 기기",
+        queries: ["노이즈캔슬링 헤드폰", "백색소음기", "집중 타이머"],
+      },
+      {
+        id: "focus-desk",
+        title: "손이 편한 데스크 셋업",
+        subtitle: "오래 앉아 있어도 편안한 작업 환경을 구성해요.",
+        category: "데스크테리어",
+        queries: ["기계식 키보드", "모니터 조명", "모니터암"],
+      },
+      {
+        id: "focus-body",
+        title: "집중력을 지키는 컨디션 관리",
+        subtitle: "자세와 휴식 리듬을 챙겨 지치지 않도록 도와줘요.",
+        category: "업무/건강",
+        queries: ["인체공학 의자", "발받침대", "목 어깨 마사지기"],
+      },
+    ];
+  }
+
+  if (analysis.keywords.includes("수면")) {
+    return [
+      {
+        id: "sleep-light",
+        title: "수면 리듬을 만드는 빛",
+        subtitle: "잠들기 전 자극을 줄이고 편안한 분위기를 만들어요.",
+        category: "수면 조명",
+        queries: ["수면 조명", "스마트 무드등", "일출 알람시계"],
+      },
+      {
+        id: "sleep-comfort",
+        title: "몸이 편안한 침실 환경",
+        subtitle: "베개와 침구를 바꿔 누웠을 때의 편안함을 높여요.",
+        category: "침구/편안함",
+        queries: ["메모리폼 베개", "경추 베개", "온열 매트"],
+      },
+      {
+        id: "sleep-sound",
+        title: "마음을 차분하게 하는 소리",
+        subtitle: "주변 소음을 덮고 일정한 수면 환경을 유지해요.",
+        category: "사운드/공기",
+        queries: ["백색소음기", "공기청정기", "가습기"],
+      },
+    ];
+  }
+
+  if (analysis.keywords.includes("운동")) {
+    return [
+      {
+        id: "workout-home",
+        title: "오늘 바로 시작하는 홈트",
+        subtitle: "공간을 많이 차지하지 않고 가볍게 시작할 수 있어요.",
+        category: "홈트",
+        queries: ["요가 매트", "조절 덤벨", "홈트 밴드 세트"],
+      },
+      {
+        id: "workout-wearable",
+        title: "운동을 기록하는 스마트 기기",
+        subtitle: "활동량과 심박, 루틴을 기록해 꾸준함을 도와줘요.",
+        category: "스마트 운동",
+        queries: ["스포츠 스마트워치", "스마트 체중계", "무선 이어폰 운동"],
+      },
+      {
+        id: "workout-recovery",
+        title: "운동 후 회복을 위한 아이템",
+        subtitle: "운동 뒤 뭉친 근육을 풀고 다음 운동을 준비해요.",
+        category: "회복",
+        queries: ["마사지건", "폼롤러", "온열 찜질기"],
+      },
+    ];
+  }
+
+  if (analysis.keywords.includes("요리/먹거리")) {
+    return [
+      {
+        id: "food-quick",
+        title: "빠르게 한 끼를 만드는 주방가전",
+        subtitle: "복잡한 준비 없이 간단한 식사를 만들 수 있어요.",
+        category: "간편 요리",
+        queries: ["에어프라이어", "멀티쿠커", "샌드위치 메이커"],
+      },
+      {
+        id: "food-cafe",
+        title: "집에서 즐기는 카페 시간",
+        subtitle: "커피와 디저트로 작은 기분 전환을 만들어 보세요.",
+        category: "홈카페",
+        queries: ["캡슐 커피머신", "전동 우유거품기", "와플 메이커"],
+      },
+      {
+        id: "food-snack",
+        title: "가볍게 즐기는 간식",
+        subtitle: "바로 먹거나 간단히 준비할 수 있는 인기 먹거리예요.",
+        category: "간식/먹거리",
+        queries: ["프리미엄 디저트 세트", "견과류 선물세트", "티 세트"],
+      },
+    ];
+  }
+
   if (analysis.keywords.includes("휴식/놀이")) {
     return [
       {
@@ -88,6 +218,35 @@ function buildSearchGroups(message: string, analysis: UserAnalysis): SearchGroup
         subtitle: "복잡한 준비 없이 시작할 수 있는 활동을 모았어요.",
         category: "야외/활동",
         queries: ["배드민턴 라켓 세트", "피크닉 매트", "미니 자전거"],
+      },
+    ];
+  }
+
+  if (
+    analysis.keywords.length === 0 &&
+    (/뭐\s*(살까|사지|할까)|아무거나|추천해줘|요즘 뭐/.test(message) || message.length < 12)
+  ) {
+    return [
+      {
+        id: "discovery-fun",
+        title: "가볍게 기분을 바꾸는 아이템",
+        subtitle: "큰 고민 없이 바로 즐길 수 있는 인기 상품부터 둘러봐요.",
+        category: "재미/취미",
+        queries: ["휴대용 게임기", "블루투스 스피커", "미니 빔프로젝터"],
+      },
+      {
+        id: "discovery-life",
+        title: "일상을 편하게 만드는 아이템",
+        subtitle: "사소한 불편을 줄여 만족도가 높은 실용 상품이에요.",
+        category: "생활/실용",
+        queries: ["무선 청소기", "캡슐 커피머신", "스마트 조명"],
+      },
+      {
+        id: "discovery-self",
+        title: "나를 돌보는 작은 투자",
+        subtitle: "휴식과 건강을 챙기며 생활 리듬을 바꿔보세요.",
+        category: "휴식/건강",
+        queries: ["목 어깨 마사지기", "스마트워치", "공기청정기"],
       },
     ];
   }

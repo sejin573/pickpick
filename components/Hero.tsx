@@ -69,13 +69,13 @@ export default function Hero({
           <button
             type="button"
             onClick={onReset}
-            className="hidden shrink-0 items-center gap-2 rounded-2xl px-2 py-1.5 transition hover:bg-zinc-100 sm:flex"
+            className="group hidden shrink-0 items-center gap-2 rounded-2xl px-2 py-1.5 transition duration-200 hover:bg-zinc-100 sm:flex"
             aria-label="PickPick 메인 화면으로 돌아가기"
           >
-            <span className="grid h-9 w-9 place-items-center rounded-xl bg-ink text-sm font-black text-white">
+            <span className="grid h-9 w-9 place-items-center rounded-xl bg-ink text-sm font-black text-white transition duration-200 group-hover:-rotate-3 group-hover:scale-105 group-hover:bg-violet-600">
               P
             </span>
-            <span className="text-sm font-black">PickPick</span>
+            <span className="text-sm font-black transition-colors group-hover:text-violet-700">PickPick</span>
           </button>
           {input}
         </div>
@@ -86,11 +86,11 @@ export default function Hero({
   return (
     <section className="relative flex min-h-[82vh] flex-col">
       <header className="flex items-center justify-between py-3">
-        <div className="flex items-center gap-2.5">
-          <span className="grid h-10 w-10 place-items-center rounded-2xl bg-ink text-sm font-black text-white">
+        <div className="group flex cursor-default items-center gap-2.5 rounded-2xl px-1 py-1">
+          <span className="grid h-10 w-10 place-items-center rounded-2xl bg-ink text-sm font-black text-white transition duration-200 group-hover:-rotate-3 group-hover:scale-105 group-hover:bg-violet-600 group-hover:shadow-lg group-hover:shadow-violet-200">
             P
           </span>
-          <span className="font-black tracking-tight">PickPick</span>
+          <span className="font-black tracking-tight transition-colors group-hover:text-violet-700">PickPick</span>
         </div>
         <span className="rounded-full border border-zinc-200 bg-white px-3 py-1.5 text-[11px] font-bold text-zinc-500">
           LIVE SHOPPING AGENT
@@ -98,7 +98,7 @@ export default function Hero({
       </header>
 
       <div className="flex flex-1 flex-col items-center justify-center pb-16 pt-12 text-center">
-        <span className="mb-6 grid h-14 w-14 place-items-center rounded-2xl bg-violet-600 text-2xl text-white shadow-lg shadow-violet-200">
+        <span className="mb-6 grid h-14 w-14 cursor-default place-items-center rounded-2xl bg-violet-600 text-2xl text-white shadow-lg shadow-violet-200 transition duration-300 hover:-translate-y-1 hover:rotate-6 hover:scale-105 hover:shadow-xl hover:shadow-violet-300">
           ✦
         </span>
         <p className="text-sm font-black text-violet-600">선택이 어려울 땐, 편하게 말해보세요</p>
