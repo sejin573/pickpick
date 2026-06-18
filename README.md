@@ -6,7 +6,7 @@
 
 ## 제출 정보
 
-- 배포 URL: Vercel 배포 후 작성
+- 배포 URL: https://pickpick-five.vercel.app
 - GitHub Repository URL: https://github.com/sejin573/pickpick
 - 테스트 계정: 로그인 기능 없음 / 접속 후 바로 사용 가능
 
@@ -191,15 +191,15 @@ git push -u origin main
 
 ## 제출 전 체크리스트
 
-- [ ] Node.js 20 이상 설치
-- [ ] `npm install`
-- [ ] `npm run dev`
-- [ ] `npm run build`
-- [ ] GitHub Repository 생성
-- [ ] GitHub에 push
-- [ ] Vercel에서 Repository Import
+- [x] Node.js 20 이상 설치
+- [x] `npm install`
+- [x] `npm run dev`
+- [x] `npm run build`
+- [x] GitHub Repository 생성
+- [x] GitHub에 push
+- [x] Vercel 프로젝트 생성 및 배포
 - [ ] 필요 시 `OPENAI_API_KEY` 환경변수 설정
-- [ ] Deploy
-- [ ] README에 배포 URL 작성
-- [ ] README에 GitHub Repository URL 작성
+- [x] Deploy
+- [x] README에 배포 URL 작성
+- [x] README에 GitHub Repository URL 작성
 - [ ] 과제 제출 페이지에 배포 URL과 GitHub URL 제출
