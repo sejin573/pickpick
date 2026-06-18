@@ -81,6 +81,14 @@ export interface PriceBand {
   max: number;
 }
 
+export interface SearchPlanGroup {
+  id: string;
+  title: string;
+  subtitle: string;
+  category: string;
+  queries: string[];
+}
+
 export interface ComparisonItem {
   name: string;
   price: number;
@@ -113,6 +121,7 @@ export interface RecommendResponse {
     catalogProvider?: "sample" | "naver" | "coupang";
     catalogLabel?: string;
     notice?: string;
+    queryPlanningMode?: "rules" | "openai-assisted";
   };
 }
 

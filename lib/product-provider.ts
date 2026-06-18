@@ -1,4 +1,9 @@
-import { Product, ProductCategory, UserAnalysis } from "@/lib/types";
+import {
+  Product,
+  ProductCategory,
+  SearchPlanGroup,
+  UserAnalysis,
+} from "@/lib/types";
 
 type NaverShoppingItem = {
   title: string;
@@ -32,20 +37,15 @@ export type CatalogResult = {
   label: string;
 };
 
-type SearchGroup = {
-  id: string;
-  title: string;
-  subtitle: string;
-  category: string;
-  queries: string[];
-};
-
 const categoryKeywords: Array<[ProductCategory, string[]]> = [
   ["개발/업무", ["노트북", "개발", "코딩", "업무", "키보드", "모니터"]],
   ["건강", ["건강", "부모님", "마사지", "운동", "수면"]],
   ["여행", ["여행", "캐리어", "캠핑", "출장"]],
   ["뷰티/패션", ["뷰티", "향수", "패션", "피부", "헤어"]],
-  ["생활/자취", ["자취", "집들이", "생활", "주방", "수납"]],
+  ["생활/자취", [
+    "자취", "집들이", "생활", "주방", "수납", "식물", "화분",
+    "플랜테리어", "다육이", "테라리움",
+  ]],
   ["전자기기", ["전자", "헤드폰", "스마트", "카메라", "가전"]],
 ];
 
@@ -65,7 +65,36 @@ function inferCategory(text: string): ProductCategory {
   return match?.[0] ?? "선물";
 }
 
-function buildSearchGroups(message: string, analysis: UserAnalysis): SearchGroup[] {
+export function buildSearchGroups(
+  message: string,
+  analysis: UserAnalysis,
+): SearchPlanGroup[] {
+  if (analysis.keywords.includes("식물/플랜테리어")) {
+    return [
+      {
+        id: "plant-desk",
+        title: "책상 위에 두기 좋은 작은 식물",
+        subtitle: "업무 공간을 많이 차지하지 않는 소형 화분을 모았어요.",
+        category: "소형 식물",
+        queries: ["사무실 책상 소형 식물", "미니 화분", "책상 다육이"],
+      },
+      {
+        id: "plant-low-light",
+        title: "사무실에서도 키우기 쉬운 식물",
+        subtitle: "빛과 물 관리 부담이 비교적 적은 식물을 골랐어요.",
+        category: "관리 쉬운 식물",
+        queries: ["사무실 음지 식물", "공기정화 식물 소형", "수경재배 식물"],
+      },
+      {
+        id: "plant-care",
+        title: "관리를 편하게 만드는 플랜테리어",
+        subtitle: "화분과 급수 기능까지 함께 고려한 실용적인 선택이에요.",
+        category: "화분/관리",
+        queries: ["자동급수 화분 식물", "미니 플랜테리어 화분", "테라리움 식물"],
+      },
+    ];
+  }
+
   if (analysis.keywords.includes("피로 회복")) {
     return [
       {
@@ -561,6 +590,7 @@ function isLowQualityItem(item: NaverShoppingItem): boolean {
 }
 
 const productTermGroups: string[][] = [
+  ["식물", "화분", "플랜테리어", "다육이", "테라리움", "수경재배"],
   ["노트북", "랩탑", "맥북"],
   ["모니터", "디스플레이"],
   ["키보드"],
@@ -678,12 +708,15 @@ function mapNaverItem(item: NaverShoppingItem, query: string): Product {
 export async function searchLiveProducts(
   message: string,
   analysis: UserAnalysis,
+  plannedGroups?: SearchPlanGroup[],
 ): Promise<CatalogResult | null> {
   const clientId = process.env.NAVER_CLIENT_ID;
   const clientSecret = process.env.NAVER_CLIENT_SECRET;
   if (!clientId || !clientSecret) return null;
 
-  const searchGroups = buildSearchGroups(message, analysis);
+  const searchGroups = plannedGroups?.length
+    ? plannedGroups
+    : buildSearchGroups(message, analysis);
   if (!searchGroups.length) return null;
 
   try {

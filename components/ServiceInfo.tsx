@@ -48,13 +48,13 @@ export default function ServiceInfo({
             <p className="muted mt-2 max-w-3xl">
               {usesLiveCatalog
                 ? "현재 판매 중인 상품과 가격을 조회했으며, 최종 가격·재고·배송 일정은 판매처에서 한 번 더 확인해 주세요."
-                : "외부 상품 API를 사용할 수 없을 때는 7개 카테고리, 28개 내장 상품 데이터셋으로 추천 흐름을 유지합니다."}
+                : "외부 상품 API를 사용할 수 없을 때는 7개 카테고리, 32개 내장 상품 데이터셋으로 추천 흐름을 유지합니다."}
             </p>
           </div>
           <div className="flex shrink-0 flex-wrap gap-2">
             {(usesLiveCatalog
               ? ["Live catalog", "Naver Shopping", "Fallback ready"]
-              : ["28 products", "7 categories", "Fallback ready"]
+              : ["32 products", "7 categories", "Fallback ready"]
             ).map((item) => (
               <span key={item} className="chip">{item}</span>
             ))}

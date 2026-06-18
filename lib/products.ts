@@ -168,5 +168,29 @@ export const products: Product[] = [
     tags: ["개발", "업무", "노트북", "출장", "실용"], targetUsers: ["개발자", "직장인", "학생"],
     situations: ["개발 공부", "업무", "출장"], strengths: ["포트 확장", "휴대성"], cautions: ["노트북 포트 규격 확인"],
     emotionalScore: 58, practicalScore: 97, valueScore: 92, riskScore: 12, description: "노트북의 연결 제약을 해결하는 휴대용 멀티 허브"
+  },
+  {
+    id: "plant-01", name: "미니 스투키 세라믹 화분", category: "생활/자취", price: 24900,
+    tags: ["식물/플랜테리어", "식물", "화분", "플랜테리어", "사무실", "작은 식물"], targetUsers: ["직장인", "식물 초보", "자취생"],
+    situations: ["사무실 책상", "업무 공간", "집들이"], strengths: ["작은 공간에 배치하기 쉬움", "물주기 부담이 적음"], cautions: ["과습을 피하고 통풍 확인"],
+    emotionalScore: 88, practicalScore: 86, valueScore: 92, riskScore: 12, description: "사무실 책상에 두기 좋은 관리가 쉬운 소형 스투키"
+  },
+  {
+    id: "plant-02", name: "수경재배 테이블 야자", category: "생활/자취", price: 31900,
+    tags: ["식물/플랜테리어", "식물", "수경재배", "공기정화식물", "사무실", "플랜테리어"], targetUsers: ["직장인", "식물 초보", "친구"],
+    situations: ["사무실", "업무 공간", "집들이"], strengths: ["흙 날림이 적음", "물 상태를 확인하기 쉬움"], cautions: ["직사광선과 급격한 온도 변화 주의"],
+    emotionalScore: 90, practicalScore: 88, valueScore: 87, riskScore: 15, description: "흙 관리 부담을 줄인 사무실용 수경재배 테이블 야자"
+  },
+  {
+    id: "plant-03", name: "다육식물 미니 화분 3종 세트", category: "생활/자취", price: 19900,
+    tags: ["식물/플랜테리어", "식물", "다육이", "미니 화분", "사무실", "선물"], targetUsers: ["직장인", "식물 초보", "친구"],
+    situations: ["사무실 책상", "집들이", "가벼운 선물"], strengths: ["여러 개를 나누어 배치 가능", "입문용으로 부담이 적음"], cautions: ["품종에 따라 물주기 주기가 다름"],
+    emotionalScore: 91, practicalScore: 82, valueScore: 94, riskScore: 14, description: "책상 위 분위기를 가볍게 바꾸는 작은 다육식물 세트"
+  },
+  {
+    id: "plant-04", name: "자동급수 미니 플랜터", category: "생활/자취", price: 45900,
+    tags: ["식물/플랜테리어", "식물", "화분", "자동급수", "플랜테리어", "사무실"], targetUsers: ["직장인", "식물 초보", "출장이 잦은 사용자"],
+    situations: ["사무실", "업무 공간", "장기 관리"], strengths: ["급수 주기 관리가 편함", "깔끔한 책상용 디자인"], cautions: ["식물 종류에 맞는 수분량 확인"],
+    emotionalScore: 84, practicalScore: 95, valueScore: 86, riskScore: 18, description: "바쁜 업무 중에도 물 관리를 단순하게 만드는 소형 자동급수 화분"
   }
 ];

@@ -203,6 +203,11 @@ export default function Home() {
                     <span className="tracking-wider">
                       AGENT {(meta.selectionMode ?? "rules").toUpperCase()}
                     </span>
+                    <span className="text-zinc-300">·</span>
+                    <span className="tracking-wider">
+                      PLAN{" "}
+                      {(meta.queryPlanningMode ?? "rules").toUpperCase()}
+                    </span>
                   </p>
                 </ChatItem>
               )}

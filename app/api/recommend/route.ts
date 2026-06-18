@@ -7,7 +7,11 @@ import {
   extractBudget,
   fallbackRecommend,
 } from "@/lib/agent";
-import { searchLiveProducts } from "@/lib/product-provider";
+import {
+  buildSearchGroups,
+  searchLiveProducts,
+} from "@/lib/product-provider";
+import { planSearchGroups } from "@/lib/query-planner";
 import { PriceBand, RecommendRequest, RecommendationGroup } from "@/lib/types";
 
 export const runtime = "nodejs";
@@ -100,7 +104,16 @@ export async function POST(request: Request) {
     }
 
     const analysis = analyzeMessage(message);
-    const liveCatalog = await searchLiveProducts(message, analysis);
+    const queryPlan = await planSearchGroups(
+      message,
+      analysis,
+      buildSearchGroups(message, analysis),
+    );
+    const liveCatalog = await searchLiveProducts(
+      message,
+      analysis,
+      queryPlan.groups,
+    );
     const budgetUnspecified = analysis.budgetValue === null;
     const adjacentPriceBands = buildAdjacentPriceBands(message);
     const fallback = liveCatalog
@@ -109,6 +122,13 @@ export async function POST(request: Request) {
           label: liveCatalog.label,
         })
       : fallbackRecommend(message);
+    if (fallback.meta) {
+      fallback.meta.queryPlanningMode = queryPlan.mode;
+    }
+    fallback.agentSteps[1].description =
+      queryPlan.mode === "openai-assisted"
+        ? "OpenAI가 요청을 실제 구매 가능한 세 가지 상품 관점과 네이버 검색어로 정리했습니다."
+        : `예산, 대상, 상황과 ${analysis.preferences.join(", ")} 선호를 규칙 기반으로 구조화했습니다.`;
 
     if (liveCatalog) {
       const baseGroups = liveCatalog.groups.slice(0, 3);
