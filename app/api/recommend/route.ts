@@ -58,6 +58,7 @@ export async function POST(request: Request) {
                 label: liveCatalog.label,
               },
               5,
+              { diversifyByPrice: { min: band.min, max: band.max } },
             );
             banded.push({
               id: `${band.id}-${group.id}`,

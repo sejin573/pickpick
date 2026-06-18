@@ -245,12 +245,48 @@ export function fallbackRecommend(
     label: string;
   },
   maxItems: number = 3,
+  options?: {
+    diversifyByPrice?: { min: number; max: number };
+  },
 ): RecommendResponse {
   const analysis = analyzeMessage(message);
-  const ranked = catalog
+  const allRanked = catalog
     .map((product) => ({ product, ...scoreProduct(product, analysis, message) }))
-    .sort((a, b) => b.score - a.score || a.product.price - b.product.price)
-    .slice(0, maxItems);
+    .sort((a, b) => b.score - a.score || a.product.price - b.product.price);
+
+  let ranked = allRanked.slice(0, maxItems);
+
+  if (options?.diversifyByPrice && allRanked.length > maxItems) {
+    const { min, max } = options.diversifyByPrice;
+    const range = Math.max(max - min, 1);
+    const slot = range / maxItems;
+    const picked: typeof allRanked = [];
+    const pickedIds = new Set<string>();
+
+    for (let i = 0; i < maxItems; i++) {
+      const subMin = min + i * slot;
+      const subMax = i === maxItems - 1 ? max : min + (i + 1) * slot;
+      const candidate = allRanked.find(
+        ({ product }) =>
+          !pickedIds.has(product.id) &&
+          product.price >= subMin &&
+          product.price < subMax,
+      );
+      if (candidate) {
+        picked.push(candidate);
+        pickedIds.add(candidate.product.id);
+      }
+    }
+
+    for (const entry of allRanked) {
+      if (picked.length >= maxItems) break;
+      if (pickedIds.has(entry.product.id)) continue;
+      picked.push(entry);
+      pickedIds.add(entry.product.id);
+    }
+
+    ranked = picked.sort((a, b) => a.product.price - b.product.price);
+  }
   const recommendations = ranked.map(({ product, score, matched }) =>
     buildRecommendation(product, score, matched, analysis),
   );
