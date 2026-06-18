@@ -407,8 +407,9 @@ const productTermGroups: string[][] = [
 ];
 
 function isRelevantToQuery(item: NaverShoppingItem, query: string): boolean {
+  const title = stripHtml(item.title).toLowerCase();
   const searchable = stripHtml([
-    item.title,
+    title,
     item.category1,
     item.category2,
     item.category3,
@@ -420,6 +421,10 @@ function isRelevantToQuery(item: NaverShoppingItem, query: string): boolean {
     terms.some((term) => normalizedQuery.includes(term)),
   );
   if (!requiredGroup) return true;
+
+  if (requiredGroup.includes("노트북")) {
+    return requiredGroup.some((term) => title.includes(term));
+  }
 
   return requiredGroup.some((term) => searchable.includes(term));
 }
