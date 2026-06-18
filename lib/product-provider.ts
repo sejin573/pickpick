@@ -630,7 +630,10 @@ function isInBudgetRange(
   if (priceBand) {
     const amount = priceBand[1];
     const bandSize = 10 ** Math.max(0, amount.length - 1) * 10000;
-    return price >= budget && price < budget + bandSize;
+    return (
+      price >= Math.max(0, budget - bandSize) &&
+      price < budget + bandSize * 2
+    );
   }
   return price >= budget * 0.3 && price <= budget * 1.35;
 }

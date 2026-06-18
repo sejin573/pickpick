@@ -4,6 +4,7 @@ import {
   analyzeMessage,
   buildDecisionSupport,
   enhanceRecommendation,
+  extractBudget,
   fallbackRecommend,
 } from "@/lib/agent";
 import { searchLiveProducts } from "@/lib/product-provider";
@@ -21,6 +22,26 @@ const PRICE_BANDS: PriceBand[] = [
   { id: "mid", label: "30~60만원", min: 300000, max: 600000 },
   { id: "high", label: "60~90만원", min: 600000, max: 900000 },
 ];
+
+function buildAdjacentPriceBands(message: string): PriceBand[] | null {
+  const match = message.replace(/\s/g, "").match(/(\d+)만원대/);
+  const budget = extractBudget(message);
+  if (!match || budget === null) return null;
+
+  const amount = match[1];
+  const bandSize = 10 ** Math.max(0, amount.length - 1) * 10_000;
+
+  return [0, -1, 1].map((offset) => {
+    const min = Math.max(0, budget + offset * bandSize);
+    const max = min + bandSize;
+    return {
+      id: offset === 0 ? "requested" : offset < 0 ? "lower" : "upper",
+      label: `${Math.round(min / 10_000)}만원대`,
+      min,
+      max,
+    };
+  });
+}
 
 function getClientId(request: Request): string {
   return (
@@ -81,6 +102,7 @@ export async function POST(request: Request) {
     const analysis = analyzeMessage(message);
     const liveCatalog = await searchLiveProducts(message, analysis);
     const budgetUnspecified = analysis.budgetValue === null;
+    const adjacentPriceBands = buildAdjacentPriceBands(message);
     const fallback = liveCatalog
       ? fallbackRecommend(message, liveCatalog.groups[0].products, {
           provider: liveCatalog.provider,
@@ -91,9 +113,10 @@ export async function POST(request: Request) {
     if (liveCatalog) {
       const baseGroups = liveCatalog.groups.slice(0, 3);
 
-      if (budgetUnspecified) {
+      if (budgetUnspecified || adjacentPriceBands) {
+        const activePriceBands = adjacentPriceBands ?? PRICE_BANDS;
         const banded: RecommendationGroup[] = [];
-        for (const band of PRICE_BANDS) {
+        for (const band of activePriceBands) {
           for (const group of baseGroups) {
             const products = group.products.filter(
               (product) =>
@@ -123,11 +146,13 @@ export async function POST(request: Request) {
 
         if (banded.length > 0) {
           fallback.recommendationGroups = banded;
-          fallback.priceBands = PRICE_BANDS.filter((band) =>
+          fallback.priceBands = activePriceBands.filter((band) =>
             banded.some((group) => group.priceBand === band.id),
           );
 
-          const firstActiveBand = fallback.priceBands[0]?.id;
+          const firstActiveBand =
+            fallback.priceBands.find((band) => band.id === "requested")?.id ??
+            fallback.priceBands[0]?.id;
           const primaryGroup = firstActiveBand
             ? banded.find((group) => group.priceBand === firstActiveBand)
             : banded[0];
@@ -147,7 +172,9 @@ export async function POST(request: Request) {
             (sum, group) => sum + group.recommendations.length,
             0,
           );
-          fallback.agentSteps[2].description = `네이버 쇼핑의 실제 판매 상품 ${totalCandidates}개를 가격대(0~90만원)별로 나눠 비교했습니다.`;
+          fallback.agentSteps[2].description = adjacentPriceBands
+            ? `네이버 쇼핑의 실제 판매 상품 ${totalCandidates}개를 요청 예산과 앞뒤 10만원 가격대로 나눠 비교했습니다.`
+            : `네이버 쇼핑의 실제 판매 상품 ${totalCandidates}개를 가격대(0~90만원)별로 나눠 비교했습니다.`;
           fallback.agentSteps[4].description = `${fallback.priceBands.length}개 가격대에서 카테고리별로 각각 5개 상품을 정리했습니다.`;
         }
       } else {
@@ -174,7 +201,7 @@ export async function POST(request: Request) {
       }
     }
 
-    if (budgetUnspecified) {
+    if (budgetUnspecified || adjacentPriceBands) {
       return NextResponse.json(fallback);
     }
 

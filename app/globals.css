@@ -63,19 +63,18 @@ textarea {
   background: conic-gradient(#7c5cff calc(var(--score) * 1%), #eee8ff 0);
 }
 
-.chat-in {
-  animation: chat-in 0.46s cubic-bezier(0.16, 1, 0.3, 1) both;
+.scroll-reveal {
+  opacity: 0;
+  transform: translateY(22px) scale(0.992);
+  transition:
+    opacity 0.48s cubic-bezier(0.16, 1, 0.3, 1),
+    transform 0.58s cubic-bezier(0.16, 1, 0.3, 1);
+  will-change: opacity, transform;
 }
 
-@keyframes chat-in {
-  from {
-    opacity: 0;
-    transform: translateY(14px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
+.scroll-reveal.is-visible {
+  opacity: 1;
+  transform: translateY(0) scale(1);
 }
 
 .composer-dock-in {

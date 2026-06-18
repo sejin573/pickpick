@@ -37,7 +37,7 @@ const keywordGroups: Record<string, string[]> = {
 const formatWon = (value: number) =>
   new Intl.NumberFormat("ko-KR").format(value) + "원";
 
-function extractBudget(message: string): number | null {
+export function extractBudget(message: string): number | null {
   const normalized = message.replace(/,/g, "").replace(/\s/g, "");
   const manwon = normalized.match(/(\d+(?:\.\d+)?)만원/);
   if (manwon) return Math.round(Number(manwon[1]) * 10000);
