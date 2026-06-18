@@ -25,15 +25,27 @@ const stages = [
   },
 ];
 
-export default function ChatProgress() {
-  const [stage, setStage] = useState(0);
+interface ChatProgressProps {
+  complete?: boolean;
+}
+
+export default function ChatProgress({ complete = false }: ChatProgressProps) {
+  const [activeIndex, setActiveIndex] = useState(0);
 
   useEffect(() => {
+    if (complete) {
+      setActiveIndex(stages.length);
+      return;
+    }
     const timer = window.setInterval(() => {
-      setStage((current) => Math.min(current + 1, stages.length - 1));
+      setActiveIndex((current) => Math.min(current + 1, stages.length - 1));
     }, 2200);
     return () => window.clearInterval(timer);
-  }, []);
+  }, [complete]);
+
+  const visibleStages = complete
+    ? stages
+    : stages.slice(0, activeIndex + 1);
 
   return (
     <div className="flex items-start gap-3">
@@ -44,18 +56,18 @@ export default function ChatProgress() {
         <p className="text-[11px] font-medium tracking-[0.18em] text-violet-500">
           PICKPICK AGENT
         </p>
-        <div className="mt-1.5 rounded-2xl rounded-tl-md border border-zinc-100 bg-white px-5 py-4 shadow-sm">
+        <div className="mt-1.5 rounded-2xl rounded-tl-md border border-zinc-100 bg-white px-5 py-4 shadow-sm transition-all duration-500">
           <ul className="space-y-3.5">
-            {stages.slice(0, stage + 1).map((item, index) => {
-              const isCurrent = index === stage;
-              const isDone = index < stage;
+            {visibleStages.map((item, index) => {
+              const isCurrent = !complete && index === activeIndex;
+              const isDone = complete || index < activeIndex;
               return (
                 <li
                   key={item.title}
                   className="loading-stage flex items-start gap-3"
                 >
                   <span
-                    className={`mt-0.5 grid h-5 w-5 shrink-0 place-items-center rounded-full text-[10px] ${
+                    className={`mt-0.5 grid h-5 w-5 shrink-0 place-items-center rounded-full text-[10px] transition-colors duration-300 ${
                       isDone
                         ? "bg-emerald-100 text-emerald-700"
                         : "bg-violet-100 text-violet-700"
@@ -75,7 +87,7 @@ export default function ChatProgress() {
                   </span>
                   <div className="min-w-0">
                     <p
-                      className={`text-sm font-semibold ${
+                      className={`text-sm font-semibold transition-colors duration-300 ${
                         isCurrent ? "text-ink" : "text-zinc-700"
                       }`}
                     >
@@ -91,6 +103,11 @@ export default function ChatProgress() {
               );
             })}
           </ul>
+          {complete && (
+            <p className="mt-4 border-t border-zinc-100 pt-3 text-xs leading-5 text-zinc-500">
+              아래에 정리한 결과를 확인해 보세요.
+            </p>
+          )}
         </div>
       </div>
     </div>

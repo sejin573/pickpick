@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef, useState } from "react";
+import { ReactNode, useRef, useState } from "react";
 
 import AgentSteps from "@/components/AgentSteps";
 import AnalysisPanel from "@/components/AnalysisPanel";
@@ -11,6 +11,20 @@ import Hero from "@/components/Hero";
 import RecommendationCards from "@/components/RecommendationCards";
 import ServiceInfo from "@/components/ServiceInfo";
 import { RecommendResponse } from "@/lib/types";
+
+function ChatItem({
+  delay = 0,
+  children,
+}: {
+  delay?: number;
+  children: ReactNode;
+}) {
+  return (
+    <div className="chat-in" style={{ animationDelay: `${delay}s` }}>
+      {children}
+    </div>
+  );
+}
 
 export default function Home() {
   const [message, setMessage] = useState("");
@@ -88,55 +102,77 @@ export default function Home() {
 
         <div ref={resultRef} className="mt-8 space-y-6 sm:mt-10">
           {submittedMessage && (
-            <div className="flex justify-end">
-              <div className="max-w-[80%] rounded-2xl rounded-tr-md bg-violet-600 px-4 py-3 text-[15px] leading-6 text-white shadow-sm sm:max-w-[70%]">
-                {submittedMessage}
+            <ChatItem>
+              <div className="flex justify-end">
+                <div className="max-w-[80%] rounded-2xl rounded-tr-md bg-violet-600 px-4 py-3 text-[15px] leading-6 text-white shadow-sm sm:max-w-[70%]">
+                  {submittedMessage}
+                </div>
               </div>
-            </div>
+            </ChatItem>
           )}
 
-          {loading && <ChatProgress />}
+          {(loading || result) && (
+            <ChatItem delay={0.08}>
+              <ChatProgress complete={!loading && Boolean(result)} />
+            </ChatItem>
+          )}
 
           {result && (
             <>
               {meta && (
-                <p className="flex flex-wrap items-center justify-center gap-x-3 gap-y-1 text-[11px] font-medium text-zinc-400">
-                  <span className="flex items-center gap-1.5">
-                    <span
-                      className={`h-1.5 w-1.5 rounded-full ${
-                        meta.catalogProvider === "naver"
-                          ? "bg-emerald-500"
-                          : "bg-violet-500"
-                      }`}
-                    />
-                    {meta.catalogLabel ?? "PickPick 상품 데이터"}
-                  </span>
-                  <span className="text-zinc-300">·</span>
-                  <span className="tracking-wider">
-                    CATALOG {(meta.catalogProvider ?? "sample").toUpperCase()}
-                  </span>
-                  <span className="text-zinc-300">·</span>
-                  <span className="tracking-wider">
-                    AGENT {(meta.selectionMode ?? "rules").toUpperCase()}
-                  </span>
-                </p>
+                <ChatItem delay={0.18}>
+                  <p className="flex flex-wrap items-center justify-center gap-x-3 gap-y-1 text-[11px] font-medium text-zinc-400">
+                    <span className="flex items-center gap-1.5">
+                      <span
+                        className={`h-1.5 w-1.5 rounded-full ${
+                          meta.catalogProvider === "naver"
+                            ? "bg-emerald-500"
+                            : "bg-violet-500"
+                        }`}
+                      />
+                      {meta.catalogLabel ?? "PickPick 상품 데이터"}
+                    </span>
+                    <span className="text-zinc-300">·</span>
+                    <span className="tracking-wider">
+                      CATALOG {(meta.catalogProvider ?? "sample").toUpperCase()}
+                    </span>
+                    <span className="text-zinc-300">·</span>
+                    <span className="tracking-wider">
+                      AGENT {(meta.selectionMode ?? "rules").toUpperCase()}
+                    </span>
+                  </p>
+                </ChatItem>
               )}
 
               {meta?.notice && (
-                <div className="rounded-2xl border border-amber-200 bg-amber-50 px-5 py-4 text-sm text-amber-800">
-                  {meta.notice}
-                </div>
+                <ChatItem delay={0.24}>
+                  <div className="rounded-2xl border border-amber-200 bg-amber-50 px-5 py-4 text-sm text-amber-800">
+                    {meta.notice}
+                  </div>
+                </ChatItem>
               )}
 
-              <AnalysisPanel analysis={result.analysis} />
-              <RecommendationCards
-                recommendations={result.recommendations}
-                groups={result.recommendationGroups}
-              />
-              <AgentSteps steps={result.agentSteps} />
-              <ComparisonTable items={result.comparison} />
-              <BuyingGuide guide={result.buyingGuide} />
-              <ServiceInfo onSelect={selectPrompt} />
+              <ChatItem delay={0.3}>
+                <AnalysisPanel analysis={result.analysis} />
+              </ChatItem>
+              <ChatItem delay={0.42}>
+                <RecommendationCards
+                  recommendations={result.recommendations}
+                  groups={result.recommendationGroups}
+                />
+              </ChatItem>
+              <ChatItem delay={0.54}>
+                <AgentSteps steps={result.agentSteps} />
+              </ChatItem>
+              <ChatItem delay={0.66}>
+                <ComparisonTable items={result.comparison} />
+              </ChatItem>
+              <ChatItem delay={0.78}>
+                <BuyingGuide guide={result.buyingGuide} />
+              </ChatItem>
+              <ChatItem delay={0.9}>
+                <ServiceInfo onSelect={selectPrompt} />
+              </ChatItem>
             </>
           )}
         </div>
