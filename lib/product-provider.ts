@@ -51,11 +51,26 @@ function inferCategory(text: string): ProductCategory {
 }
 
 function buildSearchQuery(message: string, analysis: UserAnalysis): string {
-  const usefulKeywords = analysis.keywords.filter(
-    (keyword) => !["선물", "생일", "감성", "실용", "가성비"].includes(keyword),
+  const explicitProductTerms = [
+    "노트북", "헤드폰", "이어폰", "키보드", "모니터", "향수", "지갑",
+    "마사지기", "혈압계", "캐리어", "카메라", "가습기", "에어프라이어",
+    "스마트워치", "의자", "드라이어", "프로젝터",
+  ].filter((keyword) => message.includes(keyword));
+  if (explicitProductTerms.length) {
+    return explicitProductTerms.slice(0, 2).join(" ");
+  }
+
+  const usefulKeywords = analysis.keywords.filter((keyword) =>
+    ["여행", "건강", "뷰티", "개발", "자취"].includes(keyword),
   );
-  const base = usefulKeywords.slice(0, 3).join(" ");
-  if (base) return `${base} ${analysis.occasion}`.trim();
+  if (usefulKeywords.length) {
+    return `${usefulKeywords.slice(0, 2).join(" ")} 추천 상품`;
+  }
+
+  const target = ["여자친구", "남자친구", "부모님", "친구"].find((keyword) =>
+    message.includes(keyword),
+  );
+  if (target) return `${target} ${analysis.occasion} 선물`;
 
   return message
     .replace(/\d+(?:\.\d+)?\s*(?:만원|원|억)/g, "")
@@ -63,6 +78,14 @@ function buildSearchQuery(message: string, analysis: UserAnalysis): string {
     .replace(/\s+/g, " ")
     .trim()
     .slice(0, 60);
+}
+
+function isLowQualityItem(item: NaverShoppingItem): boolean {
+  const text = stripHtml(`${item.title} ${item.mallName}`).toLowerCase();
+  return [
+    "렌탈", "대여", "중고", "리퍼", "해외직구", "구매대행", "도서",
+    "강의", "교육", "학원", "부품", "케이스", "보호필름",
+  ].some((keyword) => text.includes(keyword));
 }
 
 function mapNaverItem(item: NaverShoppingItem, query: string): Product {
@@ -136,6 +159,7 @@ export async function searchLiveProducts(
     if (!response.ok) return null;
     const data = (await response.json()) as NaverShoppingResponse;
     const products = (data.items ?? [])
+      .filter((item) => !isLowQualityItem(item))
       .map((item) => mapNaverItem(item, query))
       .filter((product) => product.price > 0 && product.productUrl);
 
