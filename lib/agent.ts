@@ -164,6 +164,12 @@ function buildRecommendation(
     pros: product.strengths,
     cons: product.cautions,
     fitFor: `${analysis.occasion}에 실용성과 만족도의 균형을 원하는 사용자`,
+    imageUrl: product.imageUrl,
+    productUrl: product.productUrl,
+    mallName: product.mallName,
+    brand: product.brand,
+    source: product.source,
+    isLive: product.isLive,
   };
 }
 
@@ -194,9 +200,16 @@ function buildBuyingGuide(
   };
 }
 
-export function fallbackRecommend(message: string): RecommendResponse {
+export function fallbackRecommend(
+  message: string,
+  catalog: Product[] = products,
+  catalogMeta?: {
+    provider: "sample" | "naver" | "coupang";
+    label: string;
+  },
+): RecommendResponse {
   const analysis = analyzeMessage(message);
-  const ranked = products
+  const ranked = catalog
     .map((product) => ({ product, ...scoreProduct(product, analysis, message) }))
     .sort((a, b) => b.score - a.score || a.product.price - b.product.price)
     .slice(0, 3);
@@ -224,7 +237,7 @@ export function fallbackRecommend(message: string): RecommendResponse {
       },
       {
         title: "상품 후보 필터링",
-        description: `샘플 상품 ${products.length}개의 태그·대상·사용 상황을 입력 조건과 비교했습니다.`,
+        description: `${catalogMeta?.label ?? "샘플 상품 데이터"} ${catalog.length}개의 가격·태그·판매 정보를 입력 조건과 비교했습니다.`,
       },
       {
         title: "추천 점수 계산",
@@ -246,7 +259,12 @@ export function fallbackRecommend(message: string): RecommendResponse {
       risk: product.riskScore,
     })),
     buyingGuide: buildBuyingGuide(recommendations, analysis),
-    meta: { mode: "fallback" },
+    meta: {
+      mode: "fallback",
+      llmProvider: "none",
+      catalogProvider: catalogMeta?.provider ?? "sample",
+      catalogLabel: catalogMeta?.label ?? "PickPick 샘플 상품",
+    },
   };
 }
 
@@ -255,7 +273,47 @@ type LlmCopy = {
   buyingGuide?: BuyingGuide;
 };
 
-export async function enhanceWithOpenAI(
+function applyLlmCopy(
+  result: RecommendResponse,
+  copy: LlmCopy,
+  provider: "openai" | "ollama",
+): RecommendResponse {
+  return {
+    ...result,
+    recommendations: result.recommendations.map((item) => {
+      const revised = copy.reasons?.find((reason) => reason.id === item.id);
+      return revised
+        ? { ...item, reason: revised.reason, fitFor: revised.fitFor }
+        : item;
+    }),
+    buyingGuide: copy.buyingGuide ?? result.buyingGuide,
+    meta: {
+      ...result.meta,
+      mode: "llm-enhanced",
+      llmProvider: provider,
+    },
+  };
+}
+
+function llmPrompt(message: string, result: RecommendResponse) {
+  return JSON.stringify({
+    instruction:
+      "상품 순서, 상품명, 링크, 가격, 점수는 바꾸지 말고 한국어 추천 이유와 구매 가이드 문장만 자연스럽게 다듬어라. 반드시 JSON만 반환한다.",
+    request: message,
+    requiredShape: {
+      reasons: [{ id: "상품 id", reason: "추천 이유", fitFor: "적합한 사용자" }],
+      buyingGuide: {
+        bestChoice: "문장",
+        buyNowIf: ["문장"],
+        thinkMoreIf: ["문장"],
+        checkBeforeBuying: ["문장"],
+      },
+    },
+    result,
+  });
+}
+
+async function enhanceWithOpenAI(
   message: string,
   result: RecommendResponse,
 ): Promise<RecommendResponse> {
@@ -282,19 +340,7 @@ export async function enhanceWithOpenAI(
           },
           {
             role: "user",
-            content: JSON.stringify({
-              request: message,
-              requiredShape: {
-                reasons: [{ id: "상품 id", reason: "추천 이유", fitFor: "적합한 사용자" }],
-                buyingGuide: {
-                  bestChoice: "문장",
-                  buyNowIf: ["문장"],
-                  thinkMoreIf: ["문장"],
-                  checkBeforeBuying: ["문장"],
-                },
-              },
-              result,
-            }),
+            content: llmPrompt(message, result),
           },
         ],
       }),
@@ -314,24 +360,75 @@ export async function enhanceWithOpenAI(
     if (!content) return result;
     const copy = JSON.parse(content) as LlmCopy;
 
-    return {
-      ...result,
-      recommendations: result.recommendations.map((item) => {
-        const revised = copy.reasons?.find((reason) => reason.id === item.id);
-        return revised
-          ? { ...item, reason: revised.reason, fitFor: revised.fitFor }
-          : item;
-      }),
-      buyingGuide: copy.buyingGuide ?? result.buyingGuide,
-      meta: { mode: "llm-enhanced" },
-    };
+    return applyLlmCopy(result, copy, "openai");
   } catch {
-    return {
-      ...result,
-      meta: {
-        mode: "fallback",
-        notice: "LLM 연결이 원활하지 않아 내장 추천 엔진으로 결과를 생성했습니다.",
-      },
-    };
+    return result;
   }
+}
+
+async function enhanceWithOllama(
+  message: string,
+  result: RecommendResponse,
+): Promise<RecommendResponse> {
+  const baseUrl = process.env.OLLAMA_BASE_URL?.replace(/\/$/, "");
+  if (!baseUrl) return result;
+
+  try {
+    const response = await fetch(`${baseUrl}/api/chat`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        ...(process.env.OLLAMA_API_KEY
+          ? { Authorization: `Bearer ${process.env.OLLAMA_API_KEY}` }
+          : {}),
+      },
+      body: JSON.stringify({
+        model: process.env.OLLAMA_MODEL ?? "qwen3:4b",
+        stream: false,
+        format: "json",
+        messages: [{ role: "user", content: llmPrompt(message, result) }],
+        options: { temperature: 0.3 },
+      }),
+      signal: AbortSignal.timeout(12000),
+    });
+    if (!response.ok) return result;
+
+    const data = (await response.json()) as {
+      message?: { content?: string };
+    };
+    if (!data.message?.content) return result;
+    return applyLlmCopy(
+      result,
+      JSON.parse(data.message.content) as LlmCopy,
+      "ollama",
+    );
+  } catch {
+    return result;
+  }
+}
+
+export async function enhanceRecommendation(
+  message: string,
+  result: RecommendResponse,
+): Promise<RecommendResponse> {
+  const preferred = (process.env.LLM_PROVIDER ?? "openai").toLowerCase();
+  const enhanced =
+    preferred === "ollama"
+      ? await enhanceWithOllama(message, result)
+      : await enhanceWithOpenAI(message, result);
+
+  if (enhanced.meta?.mode === "llm-enhanced") return enhanced;
+
+  return {
+    ...result,
+    meta: {
+      ...result.meta,
+      mode: "fallback",
+      llmProvider: "none",
+      notice:
+        result.meta?.catalogProvider === "naver"
+          ? "실시간 상품은 불러왔고, 설명은 PickPick 추천 엔진이 생성했습니다."
+          : undefined,
+    },
+  };
 }

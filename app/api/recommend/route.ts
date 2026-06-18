@@ -1,6 +1,11 @@
 import { NextResponse } from "next/server";
 
-import { enhanceWithOpenAI, fallbackRecommend } from "@/lib/agent";
+import {
+  analyzeMessage,
+  enhanceRecommendation,
+  fallbackRecommend,
+} from "@/lib/agent";
+import { searchLiveProducts } from "@/lib/product-provider";
 import { RecommendRequest } from "@/lib/types";
 
 export const runtime = "nodejs";
@@ -17,8 +22,15 @@ export async function POST(request: Request) {
       );
     }
 
-    const fallback = fallbackRecommend(message);
-    const result = await enhanceWithOpenAI(message, fallback);
+    const analysis = analyzeMessage(message);
+    const liveCatalog = await searchLiveProducts(message, analysis);
+    const fallback = liveCatalog
+      ? fallbackRecommend(message, liveCatalog.products, {
+          provider: liveCatalog.provider,
+          label: liveCatalog.label,
+        })
+      : fallbackRecommend(message);
+    const result = await enhanceRecommendation(message, fallback);
     return NextResponse.json(result);
   } catch {
     return NextResponse.json(

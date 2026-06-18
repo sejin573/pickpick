@@ -39,7 +39,7 @@ textarea {
   }
 
   .surface {
-    @apply rounded-3xl border border-violet-100 bg-white/90 shadow-soft backdrop-blur;
+    @apply rounded-3xl border border-white/80 bg-white/90 shadow-soft backdrop-blur;
   }
 
   .eyebrow {

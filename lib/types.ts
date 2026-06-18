@@ -22,6 +22,12 @@ export interface Product {
   valueScore: number;
   riskScore: number;
   description: string;
+  imageUrl?: string;
+  productUrl?: string;
+  mallName?: string;
+  brand?: string;
+  source?: "sample" | "naver" | "coupang";
+  isLive?: boolean;
 }
 
 export interface UserAnalysis {
@@ -50,6 +56,12 @@ export interface Recommendation {
   pros: string[];
   cons: string[];
   fitFor: string;
+  imageUrl?: string;
+  productUrl?: string;
+  mallName?: string;
+  brand?: string;
+  source?: "sample" | "naver" | "coupang";
+  isLive?: boolean;
 }
 
 export interface ComparisonItem {
@@ -77,6 +89,9 @@ export interface RecommendResponse {
   buyingGuide: BuyingGuide;
   meta?: {
     mode: "fallback" | "llm-enhanced";
+    llmProvider?: "openai" | "ollama" | "none";
+    catalogProvider?: "sample" | "naver" | "coupang";
+    catalogLabel?: string;
     notice?: string;
   };
 }

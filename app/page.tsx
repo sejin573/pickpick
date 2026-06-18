@@ -64,6 +64,27 @@ export default function Home() {
         <div ref={resultRef} className="mt-8 space-y-6 sm:mt-12">
           {result ? (
             <>
+              <div className="flex flex-col gap-3 rounded-2xl border border-violet-100 bg-white/80 px-5 py-4 shadow-sm sm:flex-row sm:items-center sm:justify-between">
+                <div className="flex items-center gap-3">
+                  <span className={`h-2.5 w-2.5 rounded-full ${result.meta?.catalogProvider === "naver" ? "bg-emerald-500" : "bg-violet-500"}`} />
+                  <div>
+                    <p className="text-sm font-bold text-zinc-800">
+                      {result.meta?.catalogLabel ?? "PickPick 상품 데이터"}
+                    </p>
+                    <p className="text-xs text-zinc-500">
+                      가격과 재고는 판매 페이지에서 최종 확인해 주세요.
+                    </p>
+                  </div>
+                </div>
+                <div className="flex flex-wrap gap-2 text-[11px] font-bold">
+                  <span className="rounded-full bg-zinc-100 px-3 py-1.5 text-zinc-600">
+                    CATALOG · {(result.meta?.catalogProvider ?? "sample").toUpperCase()}
+                  </span>
+                  <span className="rounded-full bg-violet-50 px-3 py-1.5 text-violet-700">
+                    COPY · {(result.meta?.llmProvider ?? "rule engine").toUpperCase()}
+                  </span>
+                </div>
+              </div>
               {result.meta?.notice && (
                 <div className="rounded-2xl border border-amber-200 bg-amber-50 px-5 py-4 text-sm text-amber-800">
                   {result.meta.notice}
