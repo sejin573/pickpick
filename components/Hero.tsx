@@ -41,7 +41,7 @@ export default function Hero({
           onClick={onSubmit}
           disabled={loading}
           aria-label="추천 요청 보내기"
-          className="grid h-11 w-11 shrink-0 place-items-center rounded-full bg-ink text-lg font-black text-white transition hover:bg-violet-600 disabled:cursor-wait disabled:opacity-70"
+          className="grid h-11 w-11 shrink-0 place-items-center rounded-full bg-ink text-lg font-medium text-white transition hover:bg-violet-600 disabled:cursor-wait disabled:opacity-70"
         >
           {loading ? (
             <span className="flex gap-0.5">
@@ -55,7 +55,7 @@ export default function Hero({
         </button>
       </div>
       {error && (
-        <p role="alert" className="mt-3 text-center text-sm font-semibold text-red-500">
+        <p role="alert" className="mt-3 text-center text-sm font-medium text-red-500">
           {error}
         </p>
       )}
@@ -72,10 +72,10 @@ export default function Hero({
             className="group hidden shrink-0 items-center gap-2 rounded-2xl px-2 py-1.5 transition duration-200 hover:bg-zinc-100 sm:flex"
             aria-label="PickPick 메인 화면으로 돌아가기"
           >
-            <span className="grid h-9 w-9 place-items-center rounded-xl bg-ink text-sm font-black text-white transition duration-200 group-hover:-rotate-3 group-hover:scale-105 group-hover:bg-violet-600">
+            <span className="grid h-9 w-9 place-items-center rounded-xl bg-ink text-sm font-semibold text-white transition duration-200 group-hover:-rotate-3 group-hover:scale-105 group-hover:bg-violet-600">
               P
             </span>
-            <span className="text-sm font-black transition-colors group-hover:text-violet-700">PickPick</span>
+            <span className="text-sm font-semibold tracking-tight transition-colors group-hover:text-violet-700">PickPick</span>
           </button>
           {input}
         </div>
@@ -87,12 +87,12 @@ export default function Hero({
     <section className="relative flex min-h-[82vh] flex-col">
       <header className="flex items-center justify-between py-3">
         <div className="group flex cursor-default items-center gap-2.5 rounded-2xl px-1 py-1">
-          <span className="grid h-10 w-10 place-items-center rounded-2xl bg-ink text-sm font-black text-white transition duration-200 group-hover:-rotate-3 group-hover:scale-105 group-hover:bg-violet-600 group-hover:shadow-lg group-hover:shadow-violet-200">
+          <span className="grid h-10 w-10 place-items-center rounded-2xl bg-ink text-sm font-semibold text-white transition duration-200 group-hover:-rotate-3 group-hover:scale-105 group-hover:bg-violet-600 group-hover:shadow-lg group-hover:shadow-violet-200">
             P
           </span>
-          <span className="font-black tracking-tight transition-colors group-hover:text-violet-700">PickPick</span>
+          <span className="text-[15px] font-semibold tracking-tight transition-colors group-hover:text-violet-700">PickPick</span>
         </div>
-        <span className="rounded-full border border-zinc-200 bg-white px-3 py-1.5 text-[11px] font-bold text-zinc-500">
+        <span className="rounded-full border border-zinc-200 bg-white/70 px-3 py-1.5 text-[11px] font-medium tracking-[0.1em] text-zinc-500 backdrop-blur">
           LIVE SHOPPING AGENT
         </span>
       </header>
@@ -101,11 +101,11 @@ export default function Hero({
         <span className="mb-6 grid h-14 w-14 cursor-default place-items-center rounded-2xl bg-violet-600 text-2xl text-white shadow-lg shadow-violet-200 transition duration-300 hover:-translate-y-1 hover:rotate-6 hover:scale-105 hover:shadow-xl hover:shadow-violet-300">
           ✦
         </span>
-        <p className="text-sm font-black text-violet-600">선택이 어려울 땐, 편하게 말해보세요</p>
-        <h1 className="mt-3 text-3xl font-black tracking-[-0.04em] text-ink sm:text-5xl">
+        <p className="text-[13px] font-medium text-violet-500">선택이 어려울 땐, 편하게 말해보세요</p>
+        <h1 className="mt-3 text-[28px] font-semibold tracking-tight text-ink sm:text-[44px] sm:leading-[1.18]">
           어떤 상품을 찾고 있나요?
         </h1>
-        <p className="mt-4 max-w-xl text-sm leading-7 text-zinc-500 sm:text-base">
+        <p className="mt-4 max-w-xl text-sm leading-7 text-zinc-500 sm:text-[15px]">
           대상과 상황, 예산을 한 문장으로 알려주면 실제 판매 상품을
           카테고리별로 비교해 드려요.
         </p>
