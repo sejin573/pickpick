@@ -62,10 +62,12 @@ function buildSearchQueries(message: string, analysis: UserAnalysis): string[] {
 
   if (message.includes("여자친구") || message.includes("여친")) {
     return [
-      "여성 프리미엄 향수",
-      "여성 주얼리 목걸이",
+      "다이슨 에어랩",
+      "애플워치 여성",
+      "14K 여성 목걸이",
+      "노이즈캔슬링 헤드폰",
+      "프리미엄 LED 마스크",
       "여성 가죽 가방",
-      "프리미엄 뷰티기기",
     ];
   }
   if (message.includes("남자친구") || message.includes("남친")) {
@@ -188,7 +190,7 @@ export async function searchLiveProducts(
       queries.map(async (query) => {
         const params = new URLSearchParams({
           query,
-          display: "20",
+          display: "100",
           start: "1",
           sort: "sim",
           exclude: "used:rental:cbshop",
