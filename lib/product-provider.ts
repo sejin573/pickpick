@@ -688,34 +688,44 @@ export async function searchLiveProducts(
 
   try {
     const responses = await Promise.all(
-      searchGroups.flatMap((group) => group.queries.map(async (query) => {
-        const params = new URLSearchParams({
-          query,
-          display: "100",
-          start: "1",
-          sort: "sim",
-          exclude: "used:rental:cbshop",
-        });
-        const response = await fetch(
-          `https://openapi.naver.com/v1/search/shop.json?${params.toString()}`,
-          {
-            headers: {
-              "X-Naver-Client-Id": clientId,
-              "X-Naver-Client-Secret": clientSecret,
-            },
-            signal: AbortSignal.timeout(6000),
-            next: { revalidate: 900 },
-          },
+      searchGroups.flatMap((group) => {
+        const queries = Array.from(
+          new Set([
+            ...group.queries,
+            `${group.category} 인기 상품`,
+            `${group.category} 프리미엄`,
+          ]),
         );
-        if (!response.ok) return [];
-        const data = (await response.json()) as NaverShoppingResponse;
-        return (data.items ?? []).map((item, rank) => ({
-          item,
-          query,
-          groupId: group.id,
-          rank,
-        }));
-      })),
+
+        return queries.map(async (query) => {
+          const params = new URLSearchParams({
+            query,
+            display: "100",
+            start: "1",
+            sort: "sim",
+            exclude: "used:rental:cbshop",
+          });
+          const response = await fetch(
+            `https://openapi.naver.com/v1/search/shop.json?${params.toString()}`,
+            {
+              headers: {
+                "X-Naver-Client-Id": clientId,
+                "X-Naver-Client-Secret": clientSecret,
+              },
+              signal: AbortSignal.timeout(6000),
+              next: { revalidate: 900 },
+            },
+          );
+          if (!response.ok) return [];
+          const data = (await response.json()) as NaverShoppingResponse;
+          return (data.items ?? []).map((item, rank) => ({
+            item,
+            query,
+            groupId: group.id,
+            rank,
+          }));
+        });
+      }),
     );
 
     const groups = searchGroups
