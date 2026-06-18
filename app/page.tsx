@@ -120,6 +120,11 @@ export default function Home() {
           <p className="mt-2 text-[11px] font-medium text-zinc-400">
             Created by sejin573 (장세진)
           </p>
+          <p className="mt-1 font-mono text-[10px] text-zinc-400">
+            v{process.env.NEXT_PUBLIC_APP_VERSION ?? "0.0.0"} ·{" "}
+            {process.env.NEXT_PUBLIC_BUILD_SHA ?? "local"} ·{" "}
+            {(process.env.NEXT_PUBLIC_BUILD_TIME ?? "").slice(0, 16).replace("T", " ")}
+          </p>
         </footer>
       </div>
     </main>

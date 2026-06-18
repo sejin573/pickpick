@@ -98,8 +98,8 @@ export interface RecommendResponse {
   buyingGuide: BuyingGuide;
   meta?: {
     mode: "fallback" | "llm-enhanced";
-    llmProvider?: "openai" | "ollama" | "none";
-    selectionMode?: "rules" | "openai-assisted" | "ollama-assisted";
+    llmProvider?: "openai" | "none";
+    selectionMode?: "rules" | "openai-assisted";
     catalogProvider?: "sample" | "naver" | "coupang";
     catalogLabel?: string;
     notice?: string;

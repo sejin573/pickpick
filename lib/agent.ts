@@ -331,7 +331,6 @@ function applyLlmCopy(
   message: string,
   result: RecommendResponse,
   copy: LlmCopy,
-  provider: "openai" | "ollama",
   candidateGroups?: CandidateGroup[],
 ): RecommendResponse {
   const analysis = analyzeMessage(message);
@@ -410,9 +409,8 @@ function applyLlmCopy(
     meta: {
       ...result.meta,
       mode: "llm-enhanced",
-      llmProvider: provider,
-      selectionMode:
-        provider === "openai" ? "openai-assisted" : "ollama-assisted",
+      llmProvider: "openai",
+      selectionMode: "openai-assisted",
     },
   };
 }
@@ -609,60 +607,7 @@ async function enhanceWithOpenAI(
     if (!content) return result;
     const copy = JSON.parse(content) as LlmCopy;
 
-    return applyLlmCopy(
-      message,
-      result,
-      copy,
-      "openai",
-      candidateGroups,
-    );
-  } catch {
-    return result;
-  }
-}
-
-async function enhanceWithOllama(
-  message: string,
-  result: RecommendResponse,
-  candidateGroups?: CandidateGroup[],
-): Promise<RecommendResponse> {
-  const baseUrl = process.env.OLLAMA_BASE_URL?.replace(/\/$/, "");
-  if (!baseUrl) return result;
-
-  try {
-    const response = await fetch(`${baseUrl}/api/chat`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        ...(process.env.OLLAMA_API_KEY
-          ? { Authorization: `Bearer ${process.env.OLLAMA_API_KEY}` }
-          : {}),
-      },
-      body: JSON.stringify({
-        model: process.env.OLLAMA_MODEL ?? "qwen3:4b",
-        stream: false,
-        format: "json",
-        messages: [{
-          role: "user",
-          content: llmPrompt(message, result, candidateGroups),
-        }],
-        options: { temperature: 0.3 },
-      }),
-      signal: AbortSignal.timeout(12000),
-    });
-    if (!response.ok) return result;
-
-    const data = (await response.json()) as {
-      message?: { content?: string };
-    };
-    if (!data.message?.content) return result;
-    return applyLlmCopy(
-      message,
-      result,
-      JSON.parse(data.message.content) as LlmCopy,
-      "ollama",
-      candidateGroups,
-    );
+    return applyLlmCopy(message, result, copy, candidateGroups);
   } catch {
     return result;
   }
@@ -673,11 +618,7 @@ export async function enhanceRecommendation(
   result: RecommendResponse,
   candidateGroups?: CandidateGroup[],
 ): Promise<RecommendResponse> {
-  const preferred = (process.env.LLM_PROVIDER ?? "openai").toLowerCase();
-  const enhanced =
-    preferred === "ollama"
-      ? await enhanceWithOllama(message, result, candidateGroups)
-      : await enhanceWithOpenAI(message, result, candidateGroups);
+  const enhanced = await enhanceWithOpenAI(message, result, candidateGroups);
 
   if (enhanced.meta?.mode === "llm-enhanced") return enhanced;
 
