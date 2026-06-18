@@ -1,0 +1,81 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  color-scheme: light;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  margin: 0;
+  color: #121018;
+  background:
+    radial-gradient(circle at 15% 0%, rgba(124, 92, 255, 0.14), transparent 26rem),
+    radial-gradient(circle at 90% 18%, rgba(191, 168, 255, 0.18), transparent 22rem),
+    #fbfaff;
+}
+
+button,
+textarea {
+  font: inherit;
+}
+
+::selection {
+  color: white;
+  background: #6847ed;
+}
+
+@layer components {
+  .page-shell {
+    @apply mx-auto w-full max-w-6xl px-5 sm:px-8;
+  }
+
+  .surface {
+    @apply rounded-3xl border border-violet-100 bg-white/90 shadow-soft backdrop-blur;
+  }
+
+  .eyebrow {
+    @apply text-xs font-bold uppercase tracking-[0.2em] text-violet-600;
+  }
+
+  .section-title {
+    @apply mt-2 text-2xl font-bold tracking-tight text-ink sm:text-3xl;
+  }
+
+  .muted {
+    @apply text-sm leading-6 text-zinc-600;
+  }
+
+  .chip {
+    @apply inline-flex items-center rounded-full border border-violet-100 bg-violet-50 px-3 py-1.5 text-xs font-semibold text-violet-700;
+  }
+}
+
+.score-ring {
+  background: conic-gradient(#7c5cff calc(var(--score) * 1%), #eee8ff 0);
+}
+
+.loading-dot {
+  animation: bounce 1.1s infinite ease-in-out;
+}
+
+.loading-dot:nth-child(2) {
+  animation-delay: 0.15s;
+}
+
+.loading-dot:nth-child(3) {
+  animation-delay: 0.3s;
+}
+
+@keyframes bounce {
+  0%, 60%, 100% { transform: translateY(0); opacity: 0.45; }
+  30% { transform: translateY(-5px); opacity: 1; }
+}
