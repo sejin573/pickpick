@@ -4,6 +4,7 @@ import { ReactNode, useEffect, useRef, useState } from "react";
 
 import AgentSteps from "@/components/AgentSteps";
 import AnalysisPanel from "@/components/AnalysisPanel";
+import AssistantMessage from "@/components/AssistantMessage";
 import BuyingGuide from "@/components/BuyingGuide";
 import ChatProgress from "@/components/ChatProgress";
 import ComparisonTable from "@/components/ComparisonTable";
@@ -191,23 +192,33 @@ export default function Home() {
                 <AnalysisPanel analysis={result.analysis} />
               </ChatItem>
               <ChatItem delay={0.42}>
-                <RecommendationCards
-                  recommendations={result.recommendations}
-                  groups={result.recommendationGroups}
-                  priceBands={result.priceBands}
-                />
+                <AssistantMessage wide>
+                  <RecommendationCards
+                    recommendations={result.recommendations}
+                    groups={result.recommendationGroups}
+                    priceBands={result.priceBands}
+                  />
+                </AssistantMessage>
               </ChatItem>
               <ChatItem delay={0.54}>
-                <AgentSteps steps={result.agentSteps} />
+                <AssistantMessage wide>
+                  <AgentSteps steps={result.agentSteps} />
+                </AssistantMessage>
               </ChatItem>
               <ChatItem delay={0.66}>
-                <ComparisonTable items={result.comparison} />
+                <AssistantMessage wide>
+                  <ComparisonTable items={result.comparison} />
+                </AssistantMessage>
               </ChatItem>
               <ChatItem delay={0.78}>
-                <BuyingGuide guide={result.buyingGuide} />
+                <AssistantMessage wide>
+                  <BuyingGuide guide={result.buyingGuide} />
+                </AssistantMessage>
               </ChatItem>
               <ChatItem delay={0.9}>
-                <ServiceInfo onSelect={selectPrompt} meta={result.meta} />
+                <AssistantMessage wide>
+                  <ServiceInfo onSelect={selectPrompt} meta={result.meta} />
+                </AssistantMessage>
               </ChatItem>
             </>
           )}
