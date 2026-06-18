@@ -24,6 +24,13 @@ export default function Home() {
     window.scrollTo({ top: 0, behavior: "smooth" });
   };
 
+  const resetToHome = () => {
+    setResult(null);
+    setMessage("");
+    setError("");
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  };
+
   const requestRecommendation = async () => {
     const trimmed = message.trim();
     if (!trimmed) {
@@ -58,6 +65,7 @@ export default function Home() {
           loading={loading}
           error={error}
           compact={Boolean(result)}
+          onReset={resetToHome}
           onMessageChange={setMessage}
           onSubmit={requestRecommendation}
         />

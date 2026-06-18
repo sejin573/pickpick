@@ -73,13 +73,55 @@ function buildSearchGroups(message: string, analysis: UserAnalysis): SearchGroup
   ].filter((keyword) => message.includes(keyword));
   if (explicitProductTerms.length) {
     const query = explicitProductTerms.slice(0, 2).join(" ");
-    return [{
-      id: "direct-match",
-      title: `${query} 추천`,
-      subtitle: "요청한 제품군에서 조건에 가장 가까운 상품이에요.",
-      category: inferCategory(query),
-      queries: [query],
-    }];
+    if (message.includes("노트북") || message.includes("개발")) {
+      return [
+        {
+          id: "main-device",
+          title: "성능과 예산을 맞춘 메인 디바이스",
+          subtitle: "요청한 작업을 안정적으로 처리할 수 있는 핵심 장비예요.",
+          category: "노트북",
+          queries: [query, "개발용 노트북"],
+        },
+        {
+          id: "productivity",
+          title: "작업 효율을 높이는 주변기기",
+          subtitle: "긴 작업 시간을 더 편하고 효율적으로 만들어 줘요.",
+          category: "개발/업무",
+          queries: ["QHD 모니터", "기계식 키보드", "노이즈캔슬링 헤드폰"],
+        },
+        {
+          id: "workspace",
+          title: "집중할 수 있는 업무 환경",
+          subtitle: "책상 환경과 자세까지 함께 개선하는 선택이에요.",
+          category: "워크스페이스",
+          queries: ["인체공학 사무용 의자", "모니터암", "스탠딩 데스크"],
+        },
+      ];
+    }
+
+    return [
+      {
+        id: "direct-match",
+        title: `${query} 추천`,
+        subtitle: "요청한 제품군에서 조건에 가장 가까운 상품이에요.",
+        category: inferCategory(query),
+        queries: [query],
+      },
+      {
+        id: "practical-match",
+        title: "함께 비교할 실용적인 선택",
+        subtitle: "비슷한 목적을 더 실용적인 방식으로 해결해요.",
+        category: "실용 대안",
+        queries: [`${query} 실용적인 제품`, `${query} 인기 상품`],
+      },
+      {
+        id: "premium-match",
+        title: "만족도를 높이는 프리미엄 선택",
+        subtitle: "품질과 사용 경험을 조금 더 중요하게 본 선택이에요.",
+        category: "프리미엄",
+        queries: [`${query} 프리미엄`, `${query} 고급`],
+      },
+    ];
   }
 
   if (message.includes("여자친구") || message.includes("여친")) {
@@ -123,6 +165,13 @@ function buildSearchGroups(message: string, analysis: UserAnalysis): SearchGroup
         category: "전자기기",
         queries: ["노이즈캔슬링 헤드폰", "남성 스마트워치"],
       },
+      {
+        id: "hobby",
+        title: "취미 시간을 즐겁게 만드는 선물",
+        subtitle: "평소 관심사와 여가 시간을 풍성하게 해주는 선택이에요.",
+        category: "취미/라이프",
+        queries: ["휴대용 게임기", "캠핑 장비", "홈카페 커피머신"],
+      },
     ];
   }
   if (analysis.keywords.includes("부모님")) {
@@ -141,34 +190,147 @@ function buildSearchGroups(message: string, analysis: UserAnalysis): SearchGroup
         category: "전자기기",
         queries: ["건강관리 스마트워치", "수면 케어 기기"],
       },
+      {
+        id: "rest",
+        title: "편안한 일상을 위한 휴식 선물",
+        subtitle: "집에서 자주 사용하며 편안함을 느낄 수 있는 상품이에요.",
+        category: "생활/휴식",
+        queries: ["프리미엄 안마기", "온열 찜질기", "수면 조명"],
+      },
     ];
   }
 
-  const usefulKeywords = analysis.keywords.filter((keyword) =>
-    ["여행", "건강", "뷰티", "개발", "자취"].includes(keyword),
-  );
-  if (usefulKeywords.length) {
-    const query = `${usefulKeywords.slice(0, 2).join(" ")} 추천 상품`;
-    return [{
-      id: "context-match",
-      title: "상황 맞춤 추천",
-      subtitle: "입력한 목적과 활용도를 중심으로 골랐어요.",
-      category: inferCategory(query),
-      queries: [query],
-    }];
+  if (analysis.keywords.includes("여행")) {
+    return [
+      {
+        id: "travel-gear",
+        title: "여행을 편하게 만드는 기본 장비",
+        subtitle: "짐을 꾸리고 이동하는 과정의 번거로움을 줄여줘요.",
+        category: "여행용품",
+        queries: ["프리미엄 기내용 캐리어", "여행 압축 파우치", "여행용 백팩"],
+      },
+      {
+        id: "travel-device",
+        title: "여행 기록과 이동을 위한 디바이스",
+        subtitle: "사진과 충전, 이동 시간을 더 즐겁게 만들어 줘요.",
+        category: "전자기기",
+        queries: ["액션 카메라", "휴대용 포토 프린터", "대용량 보조배터리"],
+      },
+      {
+        id: "travel-comfort",
+        title: "여행의 피로를 줄이는 아이템",
+        subtitle: "장거리 이동과 낯선 숙소에서도 편안함을 챙겨줘요.",
+        category: "여행/휴식",
+        queries: ["노이즈캔슬링 헤드폰", "여행용 목베개", "휴대용 마사지기"],
+      },
+    ];
+  }
+
+  if (analysis.keywords.includes("자취")) {
+    return [
+      {
+        id: "home-kitchen",
+        title: "매일 쓰는 주방 아이템",
+        subtitle: "식사 준비를 간단하게 만들어 주는 자취 필수품이에요.",
+        category: "주방가전",
+        queries: ["에어프라이어", "전자레인지", "소형 커피머신"],
+      },
+      {
+        id: "home-living",
+        title: "공간을 깔끔하게 만드는 생활용품",
+        subtitle: "작은 집을 더 넓고 쾌적하게 사용할 수 있어요.",
+        category: "생활/수납",
+        queries: ["무선 청소기", "모듈 수납장", "공기청정기"],
+      },
+      {
+        id: "home-mood",
+        title: "집의 분위기를 바꾸는 아이템",
+        subtitle: "자취방에 취향과 휴식을 더하는 선택이에요.",
+        category: "홈/취향",
+        queries: ["휴대용 빔프로젝터", "무드 조명", "블루투스 스피커"],
+      },
+    ];
+  }
+
+  if (analysis.keywords.includes("건강")) {
+    return [
+      {
+        id: "health-care",
+        title: "꾸준히 관리하는 건강 기기",
+        subtitle: "일상에서 건강 상태를 확인하고 기록할 수 있어요.",
+        category: "건강",
+        queries: ["스마트 혈압계", "체성분 체중계", "건강 스마트워치"],
+      },
+      {
+        id: "recovery",
+        title: "피로 회복을 위한 홈케어",
+        subtitle: "집에서 편하게 긴장과 피로를 풀 수 있는 상품이에요.",
+        category: "마사지/회복",
+        queries: ["목 어깨 마사지기", "온열 찜질기", "마사지건"],
+      },
+      {
+        id: "wellness",
+        title: "생활 습관을 돕는 웰니스 아이템",
+        subtitle: "수면과 운동 등 건강한 생활 리듬을 만들어 줘요.",
+        category: "웰니스",
+        queries: ["수면 조명", "요가 매트", "공기청정기"],
+      },
+    ];
+  }
+
+  if (analysis.keywords.includes("뷰티")) {
+    return [
+      {
+        id: "skin-care",
+        title: "피부를 위한 홈케어",
+        subtitle: "집에서 꾸준히 관리할 수 있는 뷰티 디바이스예요.",
+        category: "스킨케어",
+        queries: ["LED 마스크", "고주파 피부관리기", "갈바닉 마사지기"],
+      },
+      {
+        id: "hair-beauty",
+        title: "매일 사용하는 헤어 뷰티",
+        subtitle: "스타일링 시간과 완성도를 함께 개선해 줘요.",
+        category: "헤어",
+        queries: ["프리미엄 헤어드라이어", "에어 스타일러", "고데기"],
+      },
+      {
+        id: "beauty-style",
+        title: "취향을 표현하는 스타일 아이템",
+        subtitle: "향과 액세서리로 자신만의 분위기를 완성해요.",
+        category: "향수/패션",
+        queries: ["프리미엄 여성 향수", "여성 주얼리", "여성 가죽 지갑"],
+      },
+    ];
   }
 
   const target = ["여자친구", "남자친구", "부모님", "친구"].find((keyword) =>
     message.includes(keyword),
   );
   if (target) {
-    return [{
-      id: "gift-match",
-      title: `${target}을 위한 선물`,
-      subtitle: `${analysis.occasion}에 잘 어울리는 상품을 모았어요.`,
-      category: "선물",
-      queries: [`${target} ${analysis.occasion} 선물`],
-    }];
+    return [
+      {
+        id: "gift-match",
+        title: `${target}을 위한 감성 선물`,
+        subtitle: `${analysis.occasion}의 의미를 잘 전할 수 있는 상품이에요.`,
+        category: "감성 선물",
+        queries: [`${target} ${analysis.occasion} 감성 선물`],
+      },
+      {
+        id: "gift-practical",
+        title: `${target}을 위한 실용 선물`,
+        subtitle: "받은 뒤 자주 사용할 수 있는 상품을 골랐어요.",
+        category: "실용 선물",
+        queries: [`${target} 실용적인 선물`],
+      },
+      {
+        id: "gift-experience",
+        title: `${target}의 취향을 위한 선물`,
+        subtitle: "취미와 일상에 새로운 즐거움을 더해줘요.",
+        category: "취향 선물",
+        queries: [`${target} 취향 선물`, `${target} 인기 선물`],
+      },
+    ];
   }
 
   const query = message
@@ -177,13 +339,29 @@ function buildSearchGroups(message: string, analysis: UserAnalysis): SearchGroup
     .replace(/\s+/g, " ")
     .trim()
     .slice(0, 60);
-  return [{
-    id: "general",
-    title: "PickPick 추천",
-    subtitle: "입력한 상황과 예산을 함께 고려했어요.",
-    category: "추천",
-    queries: [query],
-  }];
+  return [
+    {
+      id: "general",
+      title: "목적에 가장 가까운 선택",
+      subtitle: "입력한 상황과 예산을 우선으로 고려했어요.",
+      category: "맞춤 추천",
+      queries: [query],
+    },
+    {
+      id: "general-practical",
+      title: "활용도를 높인 실용적인 선택",
+      subtitle: "구매 후 자주 사용할 수 있는 상품을 중심으로 봤어요.",
+      category: "실용 추천",
+      queries: [`${query} 실용적인 제품`],
+    },
+    {
+      id: "general-premium",
+      title: "만족도를 높인 프리미엄 선택",
+      subtitle: "품질과 경험을 조금 더 중요하게 고려했어요.",
+      category: "프리미엄",
+      queries: [`${query} 프리미엄`],
+    },
+  ];
 }
 
 function isLowQualityItem(item: NaverShoppingItem): boolean {

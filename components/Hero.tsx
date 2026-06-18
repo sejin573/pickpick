@@ -5,6 +5,7 @@ interface HeroProps {
   loading: boolean;
   error: string;
   compact?: boolean;
+  onReset?: () => void;
   onMessageChange: (message: string) => void;
   onSubmit: () => void;
 }
@@ -14,6 +15,7 @@ export default function Hero({
   loading,
   error,
   compact = false,
+  onReset,
   onMessageChange,
   onSubmit,
 }: HeroProps) {
@@ -67,12 +69,17 @@ export default function Hero({
     return (
       <section className="sticky top-3 z-40 rounded-3xl border border-white/80 bg-white/85 px-4 py-3 shadow-soft backdrop-blur-xl">
         <div className="flex items-center gap-4">
-          <a href="#" className="hidden shrink-0 items-center gap-2 sm:flex">
+          <button
+            type="button"
+            onClick={onReset}
+            className="hidden shrink-0 items-center gap-2 rounded-2xl px-2 py-1.5 transition hover:bg-zinc-100 sm:flex"
+            aria-label="PickPick 메인 화면으로 돌아가기"
+          >
             <span className="grid h-9 w-9 place-items-center rounded-xl bg-ink text-sm font-black text-white">
               P
             </span>
             <span className="text-sm font-black">PickPick</span>
-          </a>
+          </button>
           {input}
         </div>
       </section>
