@@ -17,7 +17,7 @@ export default function AnalysisPanel({
       <span className="grid h-9 w-9 shrink-0 place-items-center rounded-xl bg-ink text-[13px] font-semibold text-white">
         P
       </span>
-      <div className="min-w-0 flex-1">
+      <div className="min-w-0 flex-1 max-w-2xl">
         <p className="text-[11px] font-medium tracking-[0.18em] text-violet-500">
           PICKPICK AGENT · 요청 정리
         </p>
