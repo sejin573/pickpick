@@ -22,9 +22,6 @@ export default function Hero({
   const input = (
     <div className={`mx-auto w-full ${compact ? "max-w-4xl" : "max-w-3xl"}`}>
       <div className="flex items-end gap-2 rounded-[1.75rem] border border-zinc-200 bg-white p-2.5 shadow-[0_14px_50px_rgba(24,18,50,0.10)] transition focus-within:border-violet-300 focus-within:shadow-[0_18px_60px_rgba(92,65,180,0.14)]">
-        <span className="mb-1 grid h-10 w-10 shrink-0 place-items-center rounded-full text-2xl font-light text-zinc-600">
-          +
-        </span>
         <textarea
           value={message}
           onChange={(event) => onMessageChange(event.target.value)}
@@ -36,7 +33,7 @@ export default function Hero({
           }}
           rows={compact ? 1 : 2}
           placeholder="누구를 위한 어떤 상품을 찾고 있나요?"
-          className="max-h-40 min-h-11 flex-1 resize-none border-0 bg-transparent px-1 py-3 text-[15px] leading-6 text-ink outline-none placeholder:text-zinc-400"
+          className="max-h-40 min-h-11 flex-1 resize-none border-0 bg-transparent px-3 py-3 text-[15px] leading-6 text-ink outline-none placeholder:text-zinc-400"
           aria-label="추천 상황 입력"
         />
         <button
