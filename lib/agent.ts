@@ -23,6 +23,10 @@ const keywordGroups: Record<string, string[]> = {
   "생일": ["생일", "birthday"],
   "실용": ["실용", "가성비", "유용"],
   "감성": ["감성", "특별", "기억", "예쁜"],
+  "휴식/놀이": [
+    "놀거", "놀 것", "놀고 싶", "일하기 싫", "심심", "스트레스",
+    "쉬고 싶", "힐링", "재미있는", "재밌는", "취미",
+  ],
 };
 
 const formatWon = (value: number) =>
@@ -58,6 +62,7 @@ function inferTarget(keywords: string[]): string {
 }
 
 function inferOccasion(message: string, keywords: string[]): string {
+  if (keywords.includes("휴식/놀이")) return "휴식/놀이";
   if (message.includes("생일")) return "생일";
   if (message.includes("기념일")) return "기념일";
   if (message.includes("집들이") || message.includes("자취")) return "자취/집들이";
@@ -70,7 +75,7 @@ function inferOccasion(message: string, keywords: string[]): string {
 export function analyzeMessage(message: string): UserAnalysis {
   const budgetValue = extractBudget(message);
   const keywords = extractKeywords(message);
-  const preferences = ["실용", "감성", "가성비", "건강", "뷰티", "여행", "개발"]
+  const preferences = ["실용", "감성", "가성비", "건강", "뷰티", "여행", "개발", "휴식/놀이"]
     .filter((keyword) => keywords.includes(keyword));
   const constraints: string[] = [];
 

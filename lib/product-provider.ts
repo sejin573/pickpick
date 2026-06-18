@@ -66,6 +66,32 @@ function inferCategory(text: string): ProductCategory {
 }
 
 function buildSearchGroups(message: string, analysis: UserAnalysis): SearchGroup[] {
+  if (analysis.keywords.includes("휴식/놀이")) {
+    return [
+      {
+        id: "play-digital",
+        title: "머리를 비우고 즐기는 디지털 취미",
+        subtitle: "짧게 시작해도 몰입감 있게 기분을 전환할 수 있어요.",
+        category: "게임/콘텐츠",
+        queries: ["휴대용 게임기", "블루투스 게임패드", "미니 빔프로젝터"],
+      },
+      {
+        id: "play-home",
+        title: "집에서 느긋하게 쉬는 시간",
+        subtitle: "음악과 홈카페로 일상에 작은 휴식 루틴을 만들어요.",
+        category: "홈/힐링",
+        queries: ["블루투스 스피커", "캡슐 커피머신", "무드 조명"],
+      },
+      {
+        id: "play-outdoor",
+        title: "가볍게 밖으로 나가는 취미",
+        subtitle: "복잡한 준비 없이 시작할 수 있는 활동을 모았어요.",
+        category: "야외/활동",
+        queries: ["배드민턴 라켓 세트", "피크닉 매트", "미니 자전거"],
+      },
+    ];
+  }
+
   const explicitProductTerms = [
     "노트북", "헤드폰", "이어폰", "키보드", "모니터", "향수", "지갑",
     "마사지기", "혈압계", "캐리어", "카메라", "가습기", "에어프라이어",
@@ -434,9 +460,11 @@ function isInBudgetRange(
   message: string,
   budget: number | null,
 ): boolean {
-  if (!budget) return true;
   const price = Number(item.lprice);
   if (!price) return false;
+  if (!budget) {
+    return price >= 10000 && price <= 500000;
+  }
 
   if (message.includes("이하")) return price <= budget && price >= budget * 0.15;
   const priceBand = message.match(/(\d+)\s*만원대/);
