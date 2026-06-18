@@ -177,7 +177,7 @@ try {
 
     await submitQuery(
       client,
-      "부모님 선물 30만원대 추천해줘",
+      "친구 집들이 선물 30만원대 추천해줘",
       "30만원대",
       "pickpick-results-budget.png",
     );
@@ -185,7 +185,7 @@ try {
     await openHome(client);
     await submitQuery(
       client,
-      "부모님께 드릴 건강 선물 추천해줘",
+      "자취 시작한 친구에게 줄 실용적인 집들이 선물 추천해줘",
       "0~30만원",
       "pickpick-results-open-budget.png",
     );
