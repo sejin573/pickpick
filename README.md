@@ -16,13 +16,13 @@
 
 친구 집들이 선물을 `30만원대`로 요청한 사례입니다. 요청 가격대를 먼저 보여주고 `20만원대`, `40만원대`를 비교 선택지로 제공합니다.
 
-![PickPick 예산 지정 추천 결과](docs/images/pickpick-results-budget.png)
+![PickPick 친구 집들이 예산 지정 추천 결과](docs/images/pickpick-housewarming-budget-v130.png)
 
 ### 예산을 지정하지 않은 추천 결과
 
 자취를 시작한 친구의 실용적인 집들이 선물을 예산 없이 요청한 사례입니다. `0~30만원`, `30~60만원`, `60~90만원` 범위로 나누어 탐색합니다.
 
-![PickPick 예산 미지정 추천 결과](docs/images/pickpick-results-open-budget.png)
+![PickPick 친구 집들이 예산 미지정 추천 결과](docs/images/pickpick-housewarming-open-budget-v130.png)
 
 ## 1. 서비스명 및 한 줄 소개
 

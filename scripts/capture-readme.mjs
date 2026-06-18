@@ -179,7 +179,7 @@ try {
       client,
       "친구 집들이 선물 30만원대 추천해줘",
       "30만원대",
-      "pickpick-results-budget.png",
+      "pickpick-housewarming-budget-v130.png",
     );
 
     await openHome(client);
@@ -187,7 +187,7 @@ try {
       client,
       "자취 시작한 친구에게 줄 실용적인 집들이 선물 추천해줘",
       "0~30만원",
-      "pickpick-results-open-budget.png",
+      "pickpick-housewarming-open-budget-v130.png",
     );
   } finally {
     client.close();
