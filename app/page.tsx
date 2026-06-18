@@ -163,6 +163,7 @@ export default function Home() {
                 <RecommendationCards
                   recommendations={result.recommendations}
                   groups={result.recommendationGroups}
+                  priceBands={result.priceBands}
                 />
               </ChatItem>
               <ChatItem delay={0.54}>

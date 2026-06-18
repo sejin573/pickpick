@@ -69,7 +69,15 @@ export interface RecommendationGroup {
   title: string;
   subtitle: string;
   category: string;
+  priceBand?: string;
   recommendations: Recommendation[];
+}
+
+export interface PriceBand {
+  id: string;
+  label: string;
+  min: number;
+  max: number;
 }
 
 export interface ComparisonItem {
@@ -94,6 +102,7 @@ export interface RecommendResponse {
   agentSteps: AgentStep[];
   recommendations: Recommendation[];
   recommendationGroups?: RecommendationGroup[];
+  priceBands?: PriceBand[];
   comparison: ComparisonItem[];
   buyingGuide: BuyingGuide;
   meta?: {

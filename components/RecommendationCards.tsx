@@ -3,7 +3,7 @@
 import Image from "next/image";
 import { useEffect, useMemo, useState } from "react";
 
-import { Recommendation, RecommendationGroup } from "@/lib/types";
+import { PriceBand, Recommendation, RecommendationGroup } from "@/lib/types";
 
 const formatPrice = (price: number) =>
   new Intl.NumberFormat("ko-KR").format(price) + "원";
@@ -11,39 +11,65 @@ const formatPrice = (price: number) =>
 interface RecommendationCardsProps {
   recommendations: Recommendation[];
   groups?: RecommendationGroup[];
+  priceBands?: PriceBand[];
 }
 
 export default function RecommendationCards({
   recommendations,
   groups,
+  priceBands,
 }: RecommendationCardsProps) {
-  const displayGroups = useMemo<RecommendationGroup[]>(
+  const allGroups = useMemo<RecommendationGroup[]>(
     () =>
       groups?.length
         ? groups
-        : [{
-            id: "top-picks",
-            title: "지금 가장 잘 맞는 선택",
-            subtitle: "예산과 목적을 함께 고려한 PickPick의 우선 추천이에요.",
-            category: "추천",
-            recommendations,
-          }],
+        : [
+            {
+              id: "top-picks",
+              title: "지금 가장 잘 맞는 선택",
+              subtitle: "예산과 목적을 함께 고려한 PickPick의 우선 추천이에요.",
+              category: "추천",
+              recommendations,
+            },
+          ],
     [groups, recommendations],
   );
+
+  const [activeBandId, setActiveBandId] = useState<string | undefined>(
+    priceBands?.[0]?.id,
+  );
+
+  useEffect(() => {
+    setActiveBandId(priceBands?.[0]?.id);
+  }, [priceBands]);
+
+  const displayGroups = useMemo(() => {
+    if (!priceBands || !activeBandId) return allGroups;
+    return allGroups.filter((group) => group.priceBand === activeBandId);
+  }, [allGroups, priceBands, activeBandId]);
+
   const [activeGroupIndex, setActiveGroupIndex] = useState(0);
   const [activeProductIndex, setActiveProductIndex] = useState(0);
 
-  const activeGroup = displayGroups[activeGroupIndex] ?? displayGroups[0];
+  useEffect(() => {
+    setActiveGroupIndex(0);
+  }, [activeBandId]);
+
+  const safeGroupIndex = Math.min(
+    Math.max(activeGroupIndex, 0),
+    Math.max(displayGroups.length - 1, 0),
+  );
+  const activeGroup = displayGroups[safeGroupIndex] ?? displayGroups[0];
   const activeProduct =
-    activeGroup.recommendations[activeProductIndex] ??
-    activeGroup.recommendations[0];
+    activeGroup?.recommendations[activeProductIndex] ??
+    activeGroup?.recommendations[0];
 
   useEffect(() => {
     setActiveProductIndex(0);
-  }, [activeGroupIndex]);
+  }, [safeGroupIndex]);
 
   useEffect(() => {
-    if (activeGroup.recommendations.length < 2) return;
+    if (!activeGroup || activeGroup.recommendations.length < 2) return;
     const timer = window.setInterval(() => {
       setActiveProductIndex(
         (current) => (current + 1) % activeGroup.recommendations.length,
@@ -52,34 +78,67 @@ export default function RecommendationCards({
     return () => window.clearInterval(timer);
   }, [activeGroup]);
 
+  if (!activeGroup || !activeProduct) {
+    return null;
+  }
+
   return (
     <section className="overflow-hidden rounded-[2rem] border border-white bg-white shadow-soft">
       <div className="border-b border-zinc-100 px-6 pb-0 pt-7 sm:px-9 sm:pt-9">
         <div className="flex flex-col justify-between gap-5 lg:flex-row lg:items-end">
           <div>
             <p className="eyebrow">Curated collections</p>
-            <h2 className="section-title">취향별로 나눠서 골라봤어요</h2>
+            <h2 className="section-title">
+              {priceBands ? "예산대별로 나눠서 골라봤어요" : "취향별로 나눠서 골라봤어요"}
+            </h2>
             <p className="muted mt-2">
-              한 가지 정답 대신 카테고리마다 가장 설득력 있는 선택 3개를 비교해 보세요.
+              {priceBands
+                ? "원하는 가격대를 먼저 고르고, 카테고리마다 5개의 후보를 비교해 보세요."
+                : "한 가지 정답 대신 카테고리마다 가장 설득력 있는 선택 3개를 비교해 보세요."}
             </p>
           </div>
-          <div className="flex gap-2 overflow-x-auto pb-4 lg:pb-0">
-            {displayGroups.map((group, index) => (
-              <button
-                key={group.id}
-                type="button"
-                onClick={() => setActiveGroupIndex(index)}
-                className={`whitespace-nowrap rounded-full px-4 py-2.5 text-sm font-bold transition ${
-                  index === activeGroupIndex
-                    ? "bg-ink text-white shadow-lg"
-                    : "bg-zinc-100 text-zinc-500 hover:bg-violet-50 hover:text-violet-700"
-                }`}
-              >
-                {group.category}
-                <span className="ml-2 text-[10px] opacity-60">03</span>
-              </button>
-            ))}
+        </div>
+
+        {priceBands && priceBands.length > 0 && (
+          <div className="mt-5 flex flex-wrap gap-2">
+            {priceBands.map((band) => {
+              const isActive = band.id === activeBandId;
+              return (
+                <button
+                  key={band.id}
+                  type="button"
+                  onClick={() => setActiveBandId(band.id)}
+                  className={`rounded-full px-4 py-2 text-sm font-semibold transition ${
+                    isActive
+                      ? "bg-violet-600 text-white shadow-md shadow-violet-200"
+                      : "border border-violet-100 bg-white text-zinc-600 hover:border-violet-300 hover:text-violet-700"
+                  }`}
+                >
+                  {band.label}
+                </button>
+              );
+            })}
           </div>
+        )}
+
+        <div className="mt-5 flex gap-2 overflow-x-auto pb-4 lg:pb-0">
+          {displayGroups.map((group, index) => (
+            <button
+              key={group.id}
+              type="button"
+              onClick={() => setActiveGroupIndex(index)}
+              className={`whitespace-nowrap rounded-full px-4 py-2.5 text-sm font-semibold transition ${
+                index === safeGroupIndex
+                  ? "bg-ink text-white shadow-lg"
+                  : "bg-zinc-100 text-zinc-500 hover:bg-violet-50 hover:text-violet-700"
+              }`}
+            >
+              {group.category}
+              <span className="ml-2 text-[10px] opacity-60">
+                {String(group.recommendations.length).padStart(2, "0")}
+              </span>
+            </button>
+          ))}
         </div>
         <div className="mt-6 h-0.5 w-full overflow-hidden rounded-full bg-zinc-100">
           <div
@@ -190,10 +249,18 @@ export default function RecommendationCards({
 
       <div className="border-t border-zinc-100 bg-zinc-50/70 p-5 sm:p-7">
         <div className="mb-4">
-          <h3 className="font-black text-ink">{activeGroup.title}</h3>
+          <h3 className="font-semibold text-ink">{activeGroup.title}</h3>
           <p className="mt-1 text-sm text-zinc-500">{activeGroup.subtitle}</p>
         </div>
-        <div className="grid gap-3 sm:grid-cols-3">
+        <div
+          className={`grid gap-3 ${
+            activeGroup.recommendations.length >= 5
+              ? "sm:grid-cols-3 lg:grid-cols-5"
+              : activeGroup.recommendations.length === 4
+              ? "sm:grid-cols-2 lg:grid-cols-4"
+              : "sm:grid-cols-3"
+          }`}
+        >
           {activeGroup.recommendations.map((item, index) => (
             <button
               key={item.id}

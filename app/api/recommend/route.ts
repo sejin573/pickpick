@@ -6,9 +6,15 @@ import {
   fallbackRecommend,
 } from "@/lib/agent";
 import { searchLiveProducts } from "@/lib/product-provider";
-import { RecommendRequest } from "@/lib/types";
+import { PriceBand, RecommendRequest, RecommendationGroup } from "@/lib/types";
 
 export const runtime = "nodejs";
+
+const PRICE_BANDS: PriceBand[] = [
+  { id: "low", label: "0~30만원", min: 0, max: 300000 },
+  { id: "mid", label: "30~60만원", min: 300000, max: 600000 },
+  { id: "high", label: "60~90만원", min: 600000, max: 900000 },
+];
 
 export async function POST(request: Request) {
   try {
@@ -24,35 +30,95 @@ export async function POST(request: Request) {
 
     const analysis = analyzeMessage(message);
     const liveCatalog = await searchLiveProducts(message, analysis);
+    const budgetUnspecified = analysis.budgetValue === null;
     const fallback = liveCatalog
       ? fallbackRecommend(message, liveCatalog.groups[0].products, {
           provider: liveCatalog.provider,
           label: liveCatalog.label,
         })
       : fallbackRecommend(message);
-    if (liveCatalog) {
-      fallback.recommendationGroups = liveCatalog.groups.slice(0, 3).map((group) => {
-        const groupResult = fallbackRecommend(message, group.products, {
-          provider: liveCatalog.provider,
-          label: liveCatalog.label,
-        });
-        return {
-          id: group.id,
-          title: group.title,
-          subtitle: group.subtitle,
-          category: group.category,
-          recommendations: groupResult.recommendations,
-        };
-      });
 
-      const totalCandidates = liveCatalog.groups
-        .slice(0, 3)
-        .reduce((sum, group) => sum + group.products.length, 0);
-      fallback.agentSteps[2].description =
-        `네이버 쇼핑의 실제 판매 상품 ${totalCandidates}개를 카테고리별로 나눠 가격·판매처·적합도를 비교했습니다.`;
-      fallback.agentSteps[4].description =
-        `상황에 맞는 ${fallback.recommendationGroups.length}개 카테고리에서 각각 상위 3개 상품을 선정했습니다.`;
+    if (liveCatalog) {
+      const baseGroups = liveCatalog.groups.slice(0, 3);
+
+      if (budgetUnspecified) {
+        const banded: RecommendationGroup[] = [];
+        for (const band of PRICE_BANDS) {
+          for (const group of baseGroups) {
+            const products = group.products.filter(
+              (product) =>
+                product.price >= band.min && product.price < band.max,
+            );
+            if (products.length === 0) continue;
+            const groupResult = fallbackRecommend(
+              message,
+              products,
+              {
+                provider: liveCatalog.provider,
+                label: liveCatalog.label,
+              },
+              5,
+            );
+            banded.push({
+              id: `${band.id}-${group.id}`,
+              title: group.title,
+              subtitle: group.subtitle,
+              category: group.category,
+              priceBand: band.id,
+              recommendations: groupResult.recommendations,
+            });
+          }
+        }
+
+        if (banded.length > 0) {
+          fallback.recommendationGroups = banded;
+          fallback.priceBands = PRICE_BANDS.filter((band) =>
+            banded.some((group) => group.priceBand === band.id),
+          );
+
+          const firstActiveBand = fallback.priceBands[0]?.id;
+          const primaryGroup = firstActiveBand
+            ? banded.find((group) => group.priceBand === firstActiveBand)
+            : banded[0];
+          if (primaryGroup) {
+            fallback.recommendations = primaryGroup.recommendations;
+          }
+
+          const totalCandidates = banded.reduce(
+            (sum, group) => sum + group.recommendations.length,
+            0,
+          );
+          fallback.agentSteps[2].description = `네이버 쇼핑의 실제 판매 상품 ${totalCandidates}개를 가격대(0~90만원)별로 나눠 비교했습니다.`;
+          fallback.agentSteps[4].description = `${fallback.priceBands.length}개 가격대에서 카테고리별로 각각 5개 상품을 정리했습니다.`;
+        }
+      } else {
+        fallback.recommendationGroups = baseGroups.map((group) => {
+          const groupResult = fallbackRecommend(message, group.products, {
+            provider: liveCatalog.provider,
+            label: liveCatalog.label,
+          });
+          return {
+            id: group.id,
+            title: group.title,
+            subtitle: group.subtitle,
+            category: group.category,
+            recommendations: groupResult.recommendations,
+          };
+        });
+
+        const totalCandidates = baseGroups.reduce(
+          (sum, group) => sum + group.products.length,
+          0,
+        );
+        fallback.agentSteps[2].description = `네이버 쇼핑의 실제 판매 상품 ${totalCandidates}개를 카테고리별로 나눠 가격·판매처·적합도를 비교했습니다.`;
+        fallback.agentSteps[4].description = `상황에 맞는 ${fallback.recommendationGroups.length}개 카테고리에서 각각 상위 3개 상품을 선정했습니다.`;
+      }
     }
+
+    if (budgetUnspecified) {
+      return NextResponse.json(fallback);
+    }
+
     const result = await enhanceRecommendation(
       message,
       fallback,

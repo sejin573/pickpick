@@ -244,12 +244,13 @@ export function fallbackRecommend(
     provider: "sample" | "naver" | "coupang";
     label: string;
   },
+  maxItems: number = 3,
 ): RecommendResponse {
   const analysis = analyzeMessage(message);
   const ranked = catalog
     .map((product) => ({ product, ...scoreProduct(product, analysis, message) }))
     .sort((a, b) => b.score - a.score || a.product.price - b.product.price)
-    .slice(0, 3);
+    .slice(0, maxItems);
   const recommendations = ranked.map(({ product, score, matched }) =>
     buildRecommendation(product, score, matched, analysis),
   );

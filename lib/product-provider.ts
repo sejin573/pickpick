@@ -622,7 +622,7 @@ function isInBudgetRange(
   const price = Number(item.lprice);
   if (!price) return false;
   if (!budget) {
-    return price >= 10000 && price <= 500000;
+    return price >= 10000 && price <= 900000;
   }
 
   if (message.includes("이하")) return price <= budget && price >= budget * 0.15;
