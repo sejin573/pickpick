@@ -604,7 +604,13 @@ function isLowQualityItem(item: NaverShoppingItem, message: string): boolean {
   }
   if (
     /식물|화분|플랜테리어/.test(message) &&
-    /인조|조화|장식품|덮개|커버|트레이|재배등|식물등|그로우라이트/.test(text)
+    /인조|조화|가짜|인공|장식품|덮개|커버|트레이|재배등|식물등|그로우라이트/.test(text)
+  ) {
+    return true;
+  }
+  if (
+    /작은 식물|소형 식물|미니 식물/.test(message) &&
+    /대형|중형|야외용|발코니|난간|20인치|40인치/.test(text)
   ) {
     return true;
   }
@@ -671,7 +677,7 @@ function isRelevantToQuery(
   const normalizedQuery = query.toLowerCase();
   if (requiredTerms?.length) {
     return requiredTerms.some((term) =>
-      searchable.includes(term.toLowerCase().replace(/\s+/g, " ").trim()),
+      title.includes(term.toLowerCase().replace(/\s+/g, " ").trim()),
     );
   }
 
@@ -685,6 +691,14 @@ function isRelevantToQuery(
   }
 
   return requiredGroup.some((term) => searchable.includes(term));
+}
+
+function normalizedProductTitle(title: string): string {
+  return stripHtml(title)
+    .toLowerCase()
+    .replace(/\b(?:본체|일반형|단품)\b/g, "")
+    .replace(/\s+\d+\s*(?:개|세트|팩)\s*$/g, "")
+    .replace(/[^0-9a-z가-힣]/g, "");
 }
 
 const QUERY_STOP_WORDS = new Set([
@@ -847,8 +861,7 @@ export async function searchLiveProducts(
             isInBudgetRange(item, message, analysis.budgetValue),
           )
           .filter(({ item }) => {
-            const key =
-              item.productId || `${stripHtml(item.title)}-${item.lprice}`;
+            const key = normalizedProductTitle(item.title);
             if (seen.has(key)) return false;
             seen.add(key);
             return true;
