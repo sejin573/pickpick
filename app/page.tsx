@@ -86,6 +86,7 @@ export default function Home() {
   const [activeConversationId, setActiveConversationId] = useState<string | null>(
     null,
   );
+  const [snapshotSavedAt, setSnapshotSavedAt] = useState<string | null>(null);
   const resultRef = useRef<HTMLDivElement>(null);
   const requestControllerRef = useRef<AbortController | null>(null);
   const requestIdRef = useRef(0);
@@ -151,6 +152,7 @@ export default function Home() {
     setError("");
     setLoading(false);
     setActiveConversationId(null);
+    setSnapshotSavedAt(null);
     setSidebarOpen(false);
     window.scrollTo({ top: 0, behavior: "smooth" });
   };
@@ -171,9 +173,10 @@ export default function Home() {
     });
     if (!response.ok) return;
     const data = (await response.json()) as {
-      conversation: ConversationSummary;
+      conversation: ConversationSummary & { savedAt: string };
     };
     setActiveConversationId(data.conversation.id);
+    setSnapshotSavedAt(data.conversation.savedAt);
     setConversations((current) => [
       data.conversation,
       ...current.filter((item) => item.id !== data.conversation.id),
@@ -197,6 +200,7 @@ export default function Home() {
     setLoading(true);
     setSubmittedMessage(trimmed);
     setResult(null);
+    setSnapshotSavedAt(null);
     setError("");
     window.setTimeout(
       () => resultRef.current?.scrollIntoView({ behavior: "smooth" }),
@@ -257,6 +261,7 @@ export default function Home() {
       setMessage(data.conversation.userMessage);
       setResult(data.conversation.response);
       setActiveConversationId(id);
+      setSnapshotSavedAt(data.conversation.savedAt);
       window.scrollTo({ top: 0, behavior: "smooth" });
     } catch (caught) {
       setError(
@@ -361,6 +366,24 @@ export default function Home() {
 
           {result && (
             <>
+              {snapshotSavedAt && (
+                <ChatItem delay={0.14}>
+                  <div className="flex items-center justify-center gap-2 text-center text-[11px] font-medium text-zinc-400">
+                    <span className="h-1.5 w-1.5 rounded-full bg-violet-500" />
+                    <span>
+                      {new Intl.DateTimeFormat("ko-KR", {
+                        year: "numeric",
+                        month: "long",
+                        day: "numeric",
+                        hour: "2-digit",
+                        minute: "2-digit",
+                      }).format(new Date(snapshotSavedAt))}
+                      에 저장된 당시 상품 정보입니다
+                    </span>
+                  </div>
+                </ChatItem>
+              )}
+
               {meta && (
                 <ChatItem delay={0.18}>
                   <p className="flex flex-wrap items-center justify-center gap-x-3 gap-y-1 text-[11px] font-medium text-zinc-400">

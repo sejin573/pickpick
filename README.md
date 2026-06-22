@@ -5,7 +5,7 @@
 - **배포 URL:** https://pickpick-five.vercel.app
 - **GitHub Repository:** https://github.com/sejin573/pickpick
 - **테스트 계정:** 로그인 기능 없음 / 접속 후 즉시 사용 가능
-- **현재 버전:** v1.5.2
+- **현재 버전:** v1.6.0
 
 ## 제출 정보
 
@@ -291,6 +291,7 @@ API 요청 예시:
 - Supabase 이메일 Magic Link 로그인과 쿠키 기반 세션
 - 사용자별 대화·메시지 저장 API와 본인 데이터만 허용하는 RLS
 - ChatGPT형 대화 사이드바, 대화 복원·제목 변경·삭제
+- 추천 당시 상품명·가격·이미지·링크·추천 근거 전체를 버전형 JSON 스냅샷으로 저장하고 그대로 복원
 - GitHub push만으로 Vercel 자동 배포가 동작하는 구성
 
 ## 12. 구현하지 못한 부분

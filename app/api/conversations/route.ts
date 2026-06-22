@@ -66,6 +66,7 @@ export async function POST(request: Request) {
   }
 
   const title = (body.title?.trim() || userMessage).slice(0, 60);
+  const savedAt = new Date().toISOString();
   const { data: conversation, error: conversationError } = await supabase
     .from("conversations")
     .insert({ user_id: userId, title })
@@ -92,7 +93,11 @@ export async function POST(request: Request) {
       user_id: userId,
       role: "assistant",
       content: "PickPick 추천 결과",
-      payload: body.response,
+      payload: {
+        snapshotVersion: 1,
+        savedAt,
+        response: body.response,
+      },
     },
   ]);
 
@@ -112,6 +117,7 @@ export async function POST(request: Request) {
         title: conversation.title,
         createdAt: conversation.created_at,
         updatedAt: conversation.updated_at,
+        savedAt,
       },
     },
     { status: 201 },

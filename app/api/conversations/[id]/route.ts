@@ -2,8 +2,25 @@ import { NextResponse } from "next/server";
 
 import { getAuthenticatedUserId } from "@/lib/supabase/auth";
 import { isSupabaseConfigured } from "@/lib/supabase/config";
+import { RecommendResponse } from "@/lib/types";
 
 type Context = { params: Promise<{ id: string }> };
+type StoredSnapshot = {
+  snapshotVersion: number;
+  savedAt: string;
+  response: RecommendResponse;
+};
+
+function isStoredSnapshot(payload: unknown): payload is StoredSnapshot {
+  if (!payload || typeof payload !== "object") return false;
+  const candidate = payload as Partial<StoredSnapshot>;
+  return Boolean(
+    candidate.snapshotVersion &&
+      candidate.savedAt &&
+      candidate.response &&
+      typeof candidate.response === "object",
+  );
+}
 
 export async function GET(_: Request, context: Context) {
   if (!isSupabaseConfigured()) {
@@ -36,10 +53,18 @@ export async function GET(_: Request, context: Context) {
   }
 
   const userMessage = messages?.find((item) => item.role === "user")?.content;
-  const response = messages?.find((item) => item.role === "assistant")?.payload;
-  if (!userMessage || !response) {
+  const assistantMessage = messages?.find((item) => item.role === "assistant");
+  const payload = assistantMessage?.payload;
+  if (!userMessage || !payload) {
     return NextResponse.json({ error: "저장된 대화가 올바르지 않습니다." }, { status: 500 });
   }
+  const snapshot = isStoredSnapshot(payload)
+    ? payload
+    : {
+        snapshotVersion: 0,
+        savedAt: assistantMessage.created_at,
+        response: payload as RecommendResponse,
+      };
 
   return NextResponse.json({
     conversation: {
@@ -48,7 +73,9 @@ export async function GET(_: Request, context: Context) {
       createdAt: conversation.created_at,
       updatedAt: conversation.updated_at,
       userMessage,
-      response,
+      response: snapshot.response,
+      snapshotVersion: snapshot.snapshotVersion,
+      savedAt: snapshot.savedAt,
     },
   });
 }

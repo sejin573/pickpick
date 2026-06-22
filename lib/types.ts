@@ -141,4 +141,6 @@ export interface ConversationSummary {
 export interface StoredConversation extends ConversationSummary {
   userMessage: string;
   response: RecommendResponse;
+  snapshotVersion: number;
+  savedAt: string;
 }
