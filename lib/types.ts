@@ -128,3 +128,15 @@ export interface RecommendResponse {
 export interface RecommendRequest {
   message: string;
 }
+
+export interface ConversationSummary {
+  id: string;
+  title: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface StoredConversation extends ConversationSummary {
+  userMessage: string;
+  response: RecommendResponse;
+}

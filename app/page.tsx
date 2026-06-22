@@ -1,17 +1,31 @@
 "use client";
 
-import { ReactNode, useEffect, useRef, useState } from "react";
+import { User } from "@supabase/supabase-js";
+import {
+  ReactNode,
+  useCallback,
+  useEffect,
+  useRef,
+  useState,
+} from "react";
 
 import AgentSteps from "@/components/AgentSteps";
 import AnalysisPanel from "@/components/AnalysisPanel";
 import AssistantMessage from "@/components/AssistantMessage";
+import AuthDialog from "@/components/AuthDialog";
 import BuyingGuide from "@/components/BuyingGuide";
+import ChatSidebar from "@/components/ChatSidebar";
 import ChatProgress from "@/components/ChatProgress";
 import ComparisonTable from "@/components/ComparisonTable";
 import Hero from "@/components/Hero";
 import RecommendationCards from "@/components/RecommendationCards";
 import ServiceInfo from "@/components/ServiceInfo";
-import { RecommendResponse } from "@/lib/types";
+import { createClient } from "@/lib/supabase/client";
+import {
+  ConversationSummary,
+  RecommendResponse,
+  StoredConversation,
+} from "@/lib/types";
 
 function ChatItem({
   delay = 0,
@@ -55,11 +69,23 @@ function ChatItem({
 }
 
 export default function Home() {
+  const supabaseConfigured = Boolean(
+    process.env.NEXT_PUBLIC_SUPABASE_URL &&
+      process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY,
+  );
   const [message, setMessage] = useState("");
   const [submittedMessage, setSubmittedMessage] = useState("");
   const [result, setResult] = useState<RecommendResponse | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  const [user, setUser] = useState<User | null>(null);
+  const [authOpen, setAuthOpen] = useState(false);
+  const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [conversations, setConversations] = useState<ConversationSummary[]>([]);
+  const [conversationsLoading, setConversationsLoading] = useState(false);
+  const [activeConversationId, setActiveConversationId] = useState<string | null>(
+    null,
+  );
   const resultRef = useRef<HTMLDivElement>(null);
   const requestControllerRef = useRef<AbortController | null>(null);
   const requestIdRef = useRef(0);
@@ -70,6 +96,44 @@ export default function Home() {
     },
     [],
   );
+
+  const loadConversations = useCallback(async () => {
+    if (!supabaseConfigured) return;
+    setConversationsLoading(true);
+    try {
+      const response = await fetch("/api/conversations", { cache: "no-store" });
+      if (!response.ok) {
+        if (response.status === 401) setConversations([]);
+        return;
+      }
+      const data = (await response.json()) as {
+        conversations: ConversationSummary[];
+      };
+      setConversations(data.conversations);
+    } finally {
+      setConversationsLoading(false);
+    }
+  }, [supabaseConfigured]);
+
+  useEffect(() => {
+    if (!supabaseConfigured) return;
+    const supabase = createClient();
+    supabase.auth.getUser().then(({ data }) => setUser(data.user));
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange((_event, session) => {
+      setUser(session?.user ?? null);
+      if (!session?.user) {
+        setConversations([]);
+        setActiveConversationId(null);
+      }
+    });
+    return () => subscription.unsubscribe();
+  }, [supabaseConfigured]);
+
+  useEffect(() => {
+    if (user) loadConversations();
+  }, [user, loadConversations]);
 
   const selectPrompt = (prompt: string) => {
     setMessage(prompt);
@@ -86,7 +150,34 @@ export default function Home() {
     setSubmittedMessage("");
     setError("");
     setLoading(false);
+    setActiveConversationId(null);
+    setSidebarOpen(false);
     window.scrollTo({ top: 0, behavior: "smooth" });
+  };
+
+  const saveConversation = async (
+    userMessage: string,
+    responseData: RecommendResponse,
+  ) => {
+    if (!user || !supabaseConfigured) return;
+    const response = await fetch("/api/conversations", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        title: userMessage.slice(0, 60),
+        userMessage,
+        response: responseData,
+      }),
+    });
+    if (!response.ok) return;
+    const data = (await response.json()) as {
+      conversation: ConversationSummary;
+    };
+    setActiveConversationId(data.conversation.id);
+    setConversations((current) => [
+      data.conversation,
+      ...current.filter((item) => item.id !== data.conversation.id),
+    ]);
   };
 
   const requestRecommendation = async () => {
@@ -125,6 +216,7 @@ export default function Home() {
         throw new Error(data.error ?? "추천 결과를 불러오지 못했습니다.");
       if (requestId !== requestIdRef.current) return;
       setResult(data);
+      await saveConversation(trimmed, data);
     } catch (caught) {
       if (
         controller.signal.aborted ||
@@ -146,12 +238,99 @@ export default function Home() {
   const showConversation = Boolean(result || loading || submittedMessage);
   const meta = result?.meta;
 
+  const openConversation = async (id: string) => {
+    setSidebarOpen(false);
+    setLoading(true);
+    setError("");
+    try {
+      const response = await fetch(`/api/conversations/${id}`, {
+        cache: "no-store",
+      });
+      const data = (await response.json()) as {
+        conversation?: StoredConversation;
+        error?: string;
+      };
+      if (!response.ok || !data.conversation) {
+        throw new Error(data.error ?? "대화를 불러오지 못했습니다.");
+      }
+      setSubmittedMessage(data.conversation.userMessage);
+      setMessage(data.conversation.userMessage);
+      setResult(data.conversation.response);
+      setActiveConversationId(id);
+      window.scrollTo({ top: 0, behavior: "smooth" });
+    } catch (caught) {
+      setError(
+        caught instanceof Error ? caught.message : "대화를 불러오지 못했습니다.",
+      );
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const renameConversation = async (conversation: ConversationSummary) => {
+    const title = window.prompt("새 대화 제목", conversation.title)?.trim();
+    if (!title || title === conversation.title) return;
+    const response = await fetch(`/api/conversations/${conversation.id}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ title }),
+    });
+    if (response.ok) {
+      setConversations((current) =>
+        current.map((item) =>
+          item.id === conversation.id ? { ...item, title } : item,
+        ),
+      );
+    }
+  };
+
+  const deleteConversation = async (id: string) => {
+    if (!window.confirm("이 대화를 삭제할까요?")) return;
+    const response = await fetch(`/api/conversations/${id}`, {
+      method: "DELETE",
+    });
+    if (!response.ok) return;
+    setConversations((current) => current.filter((item) => item.id !== id));
+    if (activeConversationId === id) resetToHome();
+  };
+
+  const logout = async () => {
+    if (!supabaseConfigured) return;
+    await createClient().auth.signOut();
+    resetToHome();
+  };
+
   return (
-    <main
-      className={`min-h-screen pt-5 sm:pt-8 ${
-        showConversation ? "pb-44 sm:pb-48" : "pb-16"
-      }`}
-    >
+    <>
+      <ChatSidebar
+        open={sidebarOpen}
+        configured={supabaseConfigured}
+        user={user}
+        conversations={conversations}
+        activeId={activeConversationId}
+        loading={conversationsLoading}
+        onClose={() => setSidebarOpen(false)}
+        onNewChat={resetToHome}
+        onLogin={() => setAuthOpen(true)}
+        onLogout={logout}
+        onOpenConversation={openConversation}
+        onRenameConversation={renameConversation}
+        onDeleteConversation={deleteConversation}
+      />
+      <AuthDialog open={authOpen} onClose={() => setAuthOpen(false)} />
+      <button
+        type="button"
+        onClick={() => setSidebarOpen(true)}
+        className="fixed left-3 top-3 z-30 grid h-10 w-10 place-items-center rounded-xl border border-white bg-white/90 text-lg shadow-soft backdrop-blur lg:hidden"
+        aria-label="대화 목록 열기"
+      >
+        ☰
+      </button>
+      <main
+        className={`min-h-screen pt-16 transition-[padding] lg:pl-[286px] lg:pt-8 ${
+          showConversation ? "pb-44 sm:pb-48" : "pb-16"
+        }`}
+      >
       <div className="page-shell">
         <Hero
           message={message}
@@ -275,6 +454,7 @@ export default function Home() {
           </footer>
         )}
       </div>
-    </main>
+      </main>
+    </>
   );
 }
