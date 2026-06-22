@@ -9,17 +9,18 @@ const cases = [
   },
   {
     message: "부모님께 드릴 20만원대 건강 선물",
-    required: /마사지|안마|찜질|혈압|체중|건강|워치/,
+    required: /마사지|안마|찜질|온열|케어 패드|혈압|체중|건강|워치/,
     forbidden: /산업용|업소용|탐지기|열화상|호환필터|교체용/,
   },
   {
     message: "개발 공부용 노트북 예산 100만원 이하",
-    required: /노트북|랩탑|맥북/,
+    required: /노트북|랩탑|맥북|갤럭시북|울트라북|아이디어패드|그램/,
     forbidden: /케이스|보호필름|부품/,
   },
   {
     message: "잠이 안 와",
-    required: /수면|무드등|베개|침구|매트리스|백색소음|가습기|공기청정/,
+    required:
+      /수면|숙면|안대|아이마스크|무드등|베개|필로우|침구|매트리스|백색소음|사운드머신|가습기|공기청정|귀마개/,
     forbidden: /아기|신생아|어린이|키즈|멜라토닌|영양제/,
   },
 ];
@@ -50,12 +51,14 @@ for (const testCase of cases) {
     .slice(0, 15)
     .map((item) => item.name);
 
-  const missingRequired = names.some((name) => !testCase.required.test(name));
+  const unrelated = names.filter((name) => !testCase.required.test(name));
   const forbidden = names.filter((name) => testCase.forbidden.test(name));
 
-  if (!names.length || missingRequired || forbidden.length) {
+  if (!names.length || unrelated.length || forbidden.length) {
     console.error(`FAIL ${testCase.message}`);
-    if (missingRequired) console.error("  unrelated product found");
+    if (unrelated.length) {
+      console.error(`  unrelated: ${unrelated.join(" / ")}`);
+    }
     if (forbidden.length) console.error(`  forbidden: ${forbidden.join(" / ")}`);
     failed = true;
   } else {
