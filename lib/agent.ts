@@ -186,12 +186,12 @@ function scoreProduct(
   ].join(" ");
 
   const matched = analysis.keywords.filter((keyword) => searchable.includes(keyword));
-  let score = 22 + matched.length * 9;
+  let score = 20 + matched.length * 8;
   score += contextualBudgetScore(product.price, analysis.budgetValue, message);
-  score += product.practicalScore * 0.15;
-  score += product.emotionalScore * 0.1;
-  score += product.valueScore * 0.13;
-  score -= product.riskScore * 0.09;
+  score += product.practicalScore * 0.1;
+  score += product.emotionalScore * 0.06;
+  score += product.valueScore * 0.08;
+  score -= product.riskScore * 0.08;
 
   if (analysis.preferences.includes("실용")) score += product.practicalScore * 0.08;
   if (analysis.preferences.includes("감성")) score += product.emotionalScore * 0.08;
@@ -204,19 +204,20 @@ function scoreProduct(
   }
 
   if (typeof product.popularityRank === "number") {
-    score += Math.max(0, 24 - product.popularityRank * 0.5);
+    score += Math.max(0, 12 - product.popularityRank * 0.25);
   }
 
   if (product.mallName) {
     const mall = product.mallName;
     if (MAJOR_MALLS.some((name) => mall.includes(name))) {
-      score += 7;
+      score += 4;
     }
   }
 
   if (product.brand && product.brand.length > 0) {
-    score += 3;
+    score += 2;
   }
+  score += product.qualityScore ?? 0;
 
   return {
     score: Math.max(0, Math.min(100, Math.round(score))),
@@ -353,7 +354,9 @@ export function fallbackRecommend(
       pickedIds.add(entry.product.id);
     }
 
-    ranked = picked.sort((a, b) => a.product.price - b.product.price);
+    ranked = picked.sort(
+      (a, b) => b.score - a.score || a.product.price - b.product.price,
+    );
   }
   const recommendations = ranked.map(({ product, score, matched }) =>
     buildRecommendation(product, score, matched, analysis),

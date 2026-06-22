@@ -578,15 +578,37 @@ export function buildSearchGroups(
   ];
 }
 
-function isLowQualityItem(item: NaverShoppingItem): boolean {
+function isLowQualityItem(item: NaverShoppingItem, message: string): boolean {
   const text = stripHtml(`${item.title} ${item.mallName}`).toLowerCase();
-  return [
+  const alwaysExcluded = [
     "렌탈", "대여", "중고", "리퍼", "해외직구", "구매대행", "도서",
     "강의", "교육", "학원", "부품", "케이스", "보호필름",
     "이벤트용품", "파티용품", "촛불", "캔들 숫자", "케이크 토퍼",
     "현수막", "풍선", "프로포즈 용품", "답프로포즈", "용돈박스",
-    "포장지", "쇼핑백", "스티커", "엽서",
-  ].some((keyword) => text.includes(keyword));
+    "포장지", "쇼핑백", "스티커", "엽서", "산업용", "업소용",
+    "탐지기", "열화상카메라", "교체용", "호환필터", "호환 필터",
+  ];
+  if (alwaysExcluded.some((keyword) => text.includes(keyword))) return true;
+
+  if (
+    !/아기|신생아|어린이|키즈/.test(message) &&
+    /아기|신생아|어린이|키즈/.test(text)
+  ) {
+    return true;
+  }
+  if (
+    !/영양제|건강식품|비타민|멜라토닌/.test(message) &&
+    /영양제|건강식품|멜라토닌|캡슐|정$/.test(text)
+  ) {
+    return true;
+  }
+  if (
+    /식물|화분|플랜테리어/.test(message) &&
+    /인조|조화|장식품|덮개|커버|트레이|재배등|식물등|그로우라이트/.test(text)
+  ) {
+    return true;
+  }
+  return false;
 }
 
 const productTermGroups: string[][] = [
@@ -609,7 +631,9 @@ const productTermGroups: string[][] = [
   ["포토 프린터", "포토프린터"],
   ["커피머신", "에스프레소 머신"],
   ["마사지기", "안마기", "마사지건"],
+  ["찜질기", "온열패드", "온열 매트"],
   ["혈압계"],
+  ["체중계", "체성분계"],
   ["캐리어", "여행가방"],
   ["카메라"],
   ["보조배터리"],
@@ -618,7 +642,17 @@ const productTermGroups: string[][] = [
   ["에어프라이어"],
   ["전자레인지"],
   ["조명", "무드등"],
+  ["베개", "필로우"],
+  ["침구", "이불", "매트리스"],
+  ["백색소음기", "수면음향기"],
+  ["가습기"],
   ["스피커"],
+  ["텐트"],
+  ["캠핑 테이블", "캠핑테이블", "igt 테이블"],
+  ["캠핑 의자", "캠핑의자", "체어"],
+  ["침낭"],
+  ["캠핑 버너", "버너"],
+  ["타프"],
 ];
 
 function isRelevantToQuery(item: NaverShoppingItem, query: string): boolean {
@@ -642,6 +676,40 @@ function isRelevantToQuery(item: NaverShoppingItem, query: string): boolean {
   }
 
   return requiredGroup.some((term) => searchable.includes(term));
+}
+
+const QUERY_STOP_WORDS = new Set([
+  "추천", "선물", "인기", "상품", "제품", "프리미엄", "실용적인",
+  "가정용", "사무실", "부모님", "여자친구", "남자친구", "친구",
+  "초보", "입문", "용품", "장비",
+]);
+
+function queryRelevanceScore(item: NaverShoppingItem, query: string): number {
+  const searchable = stripHtml([
+    item.title,
+    item.category1,
+    item.category2,
+    item.category3,
+    item.category4,
+  ].join(" ")).toLowerCase();
+  const tokens = query
+    .toLowerCase()
+    .split(/\s+/)
+    .map((token) => token.replace(/[^0-9a-zA-Z가-힣]/g, ""))
+    .filter((token) => token.length >= 2 && !QUERY_STOP_WORDS.has(token));
+  const matches = tokens.filter((token) => searchable.includes(token)).length;
+  return tokens.length ? matches / tokens.length : 0;
+}
+
+function itemQualityScore(item: NaverShoppingItem, query: string): number {
+  const title = stripHtml(item.title);
+  let score = 0;
+  if (title.length <= 55) score += 8;
+  else if (title.length >= 100) score -= 14;
+  else if (title.length >= 75) score -= 6;
+  if (item.brand || item.maker) score += 4;
+  score += Math.round(queryRelevanceScore(item, query) * 12);
+  return score;
 }
 
 function isInBudgetRange(
@@ -702,6 +770,7 @@ function mapNaverItem(item: NaverShoppingItem, query: string): Product {
     brand: brand || undefined,
     source: "naver",
     isLive: true,
+    qualityScore: itemQualityScore(item, query),
   };
 }
 
@@ -722,13 +791,7 @@ export async function searchLiveProducts(
   try {
     const responses = await Promise.all(
       searchGroups.flatMap((group) => {
-        const queries = Array.from(
-          new Set([
-            ...group.queries,
-            `${group.category} 인기 상품`,
-            `${group.category} 프리미엄`,
-          ]),
-        );
+        const queries = Array.from(new Set(group.queries));
 
         return queries.map(async (query) => {
           const params = new URLSearchParams({
@@ -767,7 +830,7 @@ export async function searchLiveProducts(
         const products = responses
           .flat()
           .filter((entry) => entry.groupId === group.id)
-          .filter(({ item }) => !isLowQualityItem(item))
+          .filter(({ item }) => !isLowQualityItem(item, message))
           .filter(({ item, query }) => isRelevantToQuery(item, query))
           .filter(({ item }) =>
             isInBudgetRange(item, message, analysis.budgetValue),

@@ -29,6 +29,7 @@ export interface Product {
   source?: "sample" | "naver" | "coupang";
   isLive?: boolean;
   popularityRank?: number;
+  qualityScore?: number;
 }
 
 export interface UserAnalysis {

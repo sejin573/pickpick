@@ -137,21 +137,30 @@ export async function POST(request: Request) {
         const activePriceBands = adjacentPriceBands ?? PRICE_BANDS;
         const banded: RecommendationGroup[] = [];
         for (const band of activePriceBands) {
+          const usedProductIds = new Set<string>();
           for (const group of baseGroups) {
             const products = group.products.filter(
               (product) =>
                 product.price >= band.min && product.price < band.max,
             );
             if (products.length === 0) continue;
+            const uniqueProducts = products.filter(
+              (product) => !usedProductIds.has(product.id),
+            );
+            const candidateProducts =
+              uniqueProducts.length >= 3 ? uniqueProducts : products;
             const groupResult = fallbackRecommend(
               message,
-              products,
+              candidateProducts,
               {
                 provider: liveCatalog.provider,
                 label: liveCatalog.label,
               },
               5,
               { diversifyByPrice: { min: band.min, max: band.max } },
+            );
+            groupResult.recommendations.forEach((item) =>
+              usedProductIds.add(item.id),
             );
             banded.push({
               id: `${band.id}-${group.id}`,
@@ -198,11 +207,20 @@ export async function POST(request: Request) {
           fallback.agentSteps[4].description = `${fallback.priceBands.length}개 가격대에서 카테고리별로 각각 5개 상품을 정리했습니다.`;
         }
       } else {
+        const usedProductIds = new Set<string>();
         fallback.recommendationGroups = baseGroups.map((group) => {
-          const groupResult = fallbackRecommend(message, group.products, {
+          const uniqueProducts = group.products.filter(
+            (product) => !usedProductIds.has(product.id),
+          );
+          const candidateProducts =
+            uniqueProducts.length >= 3 ? uniqueProducts : group.products;
+          const groupResult = fallbackRecommend(message, candidateProducts, {
             provider: liveCatalog.provider,
             label: liveCatalog.label,
           });
+          groupResult.recommendations.forEach((item) =>
+            usedProductIds.add(item.id),
+          );
           return {
             id: group.id,
             title: group.title,

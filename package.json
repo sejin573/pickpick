@@ -1,13 +1,14 @@
 {
   "name": "pickpick",
-  "version": "1.4.0",
+  "version": "1.5.0",
   "private": true,
   "scripts": {
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
     "lint": "next lint",
-    "capture:docs": "node scripts/capture-readme.mjs"
+    "capture:docs": "node scripts/capture-readme.mjs",
+    "evaluate:quality": "node scripts/evaluate-quality.mjs"
   },
   "dependencies": {
     "@supabase/ssr": "^0.12.0",
