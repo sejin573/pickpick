@@ -61,11 +61,12 @@ function connect(webSocketUrl) {
   });
 }
 
-async function capture(client, fileName) {
+async function capture(client, fileName, clip) {
   const result = await client.send("Page.captureScreenshot", {
     format: "png",
     fromSurface: true,
     captureBeyondViewport: false,
+    ...(clip ? { clip } : {}),
   });
   await writeFile(
     path.join(outputDir, fileName),
@@ -100,6 +101,36 @@ async function openHome(client) {
   });
   await waitForText(client, "어떤 상품을 찾고 있나요?");
   await sleep(1_000);
+}
+
+async function captureInterface(client) {
+  await capture(client, "pickpick-home-v160.png");
+
+  await evaluate(
+    client,
+    `(() => {
+      const button = [...document.querySelectorAll("button")].find((item) =>
+        item.innerText.includes("로그인하고 대화 저장")
+      );
+      button?.click();
+    })()`,
+  );
+  await waitForText(client, "PickPick에 로그인");
+  await sleep(700);
+  await capture(client, "pickpick-login-v160.png");
+
+  await evaluate(
+    client,
+    `document.querySelector('button[aria-label="로그인 창 닫기"]')?.click()`,
+  );
+  await sleep(500);
+  await capture(client, "pickpick-sidebar-v160.png", {
+    x: 0,
+    y: 0,
+    width: 360,
+    height: 1200,
+    scale: 1,
+  });
 }
 
 async function submitQuery(client, query, expectedBand, fileName) {
@@ -173,13 +204,13 @@ try {
 
     await openHome(client);
     await sleep(1_500);
-    await capture(client, "pickpick-home.png");
+    await captureInterface(client);
 
     await submitQuery(
       client,
       "친구 집들이 선물 30만원대 추천해줘",
       "30만원대",
-      "pickpick-housewarming-budget-v130.png",
+      "pickpick-housewarming-budget-v160.png",
     );
 
     await openHome(client);
@@ -187,7 +218,7 @@ try {
       client,
       "자취 시작한 친구에게 줄 실용적인 집들이 선물 추천해줘",
       "0~30만원",
-      "pickpick-housewarming-open-budget-v130.png",
+      "pickpick-housewarming-open-budget-v160.png",
     );
   } finally {
     client.close();

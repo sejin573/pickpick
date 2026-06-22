@@ -33,19 +33,33 @@
 
 ### 메인 검색 화면
 
-![PickPick 메인 화면](docs/images/pickpick-home.png)
+최신 메인 화면에는 좌측 대화 사이드바와 자연어 상품 검색 영역이 함께 표시됩니다.
+
+![PickPick v1.6.0 메인 화면](docs/images/pickpick-home-v160.png)
+
+### 이메일 Magic Link 로그인
+
+비밀번호 없이 이메일로 받은 링크를 눌러 로그인합니다. 로그인하면 추천 결과가 자동으로 대화 기록에 저장됩니다.
+
+![PickPick v1.6.0 로그인 화면](docs/images/pickpick-login-v160.png)
+
+### 대화 기록 사이드바
+
+새 대화 시작, 최근 대화 선택, 제목 변경과 삭제를 지원합니다. 비로그인 상태에서는 로그인 안내를 표시합니다.
+
+![PickPick v1.6.0 대화 사이드바](docs/images/pickpick-sidebar-v160.png)
 
 ### 예산을 지정한 추천 결과
 
 친구 집들이 선물을 `30만원대`로 요청한 사례입니다. 요청 가격대를 먼저 보여주고 `20만원대`, `40만원대`를 비교 선택지로 제공합니다.
 
-![PickPick 친구 집들이 예산 지정 추천 결과](docs/images/pickpick-housewarming-budget-v130.png)
+![PickPick 친구 집들이 예산 지정 추천 결과](docs/images/pickpick-housewarming-budget-v160.png)
 
 ### 예산을 지정하지 않은 추천 결과
 
 자취를 시작한 친구의 실용적인 집들이 선물을 예산 없이 요청한 사례입니다. `0~30만원`, `30~60만원`, `60~90만원` 범위로 나누어 탐색합니다.
 
-![PickPick 친구 집들이 예산 미지정 추천 결과](docs/images/pickpick-housewarming-open-budget-v130.png)
+![PickPick 친구 집들이 예산 미지정 추천 결과](docs/images/pickpick-housewarming-open-budget-v160.png)
 
 ## 1. 서비스명 및 한 줄 소개
 
