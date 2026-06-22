@@ -22,8 +22,21 @@ const queryPlanSchema = {
             maxItems: 4,
             items: { type: "string" },
           },
+          requiredTerms: {
+            type: "array",
+            minItems: 2,
+            maxItems: 8,
+            items: { type: "string" },
+          },
         },
-        required: ["id", "title", "subtitle", "category", "queries"],
+        required: [
+          "id",
+          "title",
+          "subtitle",
+          "category",
+          "queries",
+          "requiredTerms",
+        ],
       },
     },
   },
@@ -51,6 +64,13 @@ function normalizeGroups(groups: SearchPlanGroup[]): SearchPlanGroup[] {
             .filter(Boolean),
         ),
       ).slice(0, 4),
+      requiredTerms: Array.from(
+        new Set(
+          (group.requiredTerms ?? [])
+            .map((term) => term.replace(/\s+/g, " ").trim().slice(0, 24))
+            .filter(Boolean),
+        ),
+      ).slice(0, 8),
     };
   });
 }
@@ -90,7 +110,7 @@ export async function planSearchGroups(
           {
             role: "developer",
             content:
-              "당신은 한국 네이버 쇼핑 검색을 위한 쿼리 플래너다. 사용자 요청을 서로 겹치지 않는 실제 구매 상품 관점 3개로 나누고 각 관점에 구체적인 상품명 검색어 2~4개를 만든다. '건강가전 인기 상품', '프리미엄 선물', '생활용품'처럼 범위가 넓은 검색어는 금지한다. 각 검색어에는 혈압계, 발마사지기, 에어프라이어, 경량 노트북처럼 네이버 상품명에 실제로 등장할 핵심 제품 명사가 반드시 있어야 한다. 상품이 아닌 서비스·콘텐츠·의료 효능, 산업용 장비, 부품과 소모품을 제안하지 않는다. 사용자가 특정 상품 유형을 말하면 세 그룹 모두 그 목적에서 벗어나지 않게 한다. 예: '사무실 작은 식물'은 소형 생화 식물, 관리 쉬운 식물, 자동급수 화분으로 계획하고 조명·인조 식물·화분 덮개는 제외한다. '부모님 건강 선물'은 혈압계·마사지기·찜질기처럼 가정용 완제품으로 계획하고 탐지기·산업용 측정기·필터는 제외한다. 세 그룹의 category와 검색어는 가능한 한 중복되지 않아야 한다. 가격 표현은 검색어에 억지로 넣지 않는다. 제목과 부제는 짧은 한국어로 작성한다. id는 영문 소문자와 하이픈만 사용한다.",
+              "당신은 한국 네이버 쇼핑 검색을 위한 쿼리 플래너다. 사용자 요청을 서로 겹치지 않는 실제 구매 상품 관점 3개로 나누고 각 관점에 구체적인 상품명 검색어 2~4개를 만든다. 각 그룹의 requiredTerms에는 해당 그룹 상품의 이름 또는 네이버 카테고리에 반드시 등장해야 하는 제품 명사와 동의어를 2~8개 작성한다. 예를 들어 백색소음기 그룹은 백색소음기·화이트노이즈·사운드머신이며 공기청정기를 넣지 않는다. '건강가전 인기 상품', '프리미엄 선물', '생활용품'처럼 범위가 넓은 검색어와 핵심어는 금지한다. 각 검색어에는 혈압계, 발마사지기, 에어프라이어, 경량 노트북처럼 네이버 상품명에 실제로 등장할 핵심 제품 명사가 반드시 있어야 한다. 상품이 아닌 서비스·콘텐츠·의료 효능, 산업용 장비, 부품과 소모품을 제안하지 않는다. 사용자가 특정 상품 유형을 말하면 세 그룹 모두 그 목적에서 벗어나지 않게 한다. 예: '사무실 작은 식물'은 소형 생화 식물, 관리 쉬운 식물, 자동급수 화분으로 계획하고 조명·인조 식물·화분 덮개는 제외한다. '부모님 건강 선물'은 혈압계·마사지기·찜질기처럼 가정용 완제품으로 계획하고 탐지기·산업용 측정기·필터는 제외한다. 세 그룹의 category와 검색어는 가능한 한 중복되지 않아야 한다. 가격 표현은 검색어에 억지로 넣지 않는다. 제목과 부제는 짧은 한국어로 작성한다. id는 영문 소문자와 하이픈만 사용한다.",
           },
           {
             role: "user",
@@ -133,11 +153,23 @@ export async function planSearchGroups(
             ? query
             : `${query} 식물`.slice(0, 40),
         ),
+        requiredTerms: Array.from(
+          new Set([
+            ...(group.requiredTerms ?? []),
+            "식물",
+            "화분",
+            "다육",
+            "수경재배",
+          ]),
+        ),
       }));
     }
     if (
       groups.length !== 3 ||
-      groups.some((group) => group.queries.length < 2)
+      groups.some(
+        (group) =>
+          group.queries.length < 2 || (group.requiredTerms?.length ?? 0) < 2,
+      )
     ) {
       return { groups: ruleGroups, mode: "rules" };
     }

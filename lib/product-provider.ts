@@ -655,7 +655,11 @@ const productTermGroups: string[][] = [
   ["타프"],
 ];
 
-function isRelevantToQuery(item: NaverShoppingItem, query: string): boolean {
+function isRelevantToQuery(
+  item: NaverShoppingItem,
+  query: string,
+  requiredTerms?: string[],
+): boolean {
   const title = stripHtml(item.title).toLowerCase();
   const searchable = stripHtml([
     title,
@@ -665,6 +669,11 @@ function isRelevantToQuery(item: NaverShoppingItem, query: string): boolean {
     item.category4,
   ].join(" ")).toLowerCase();
   const normalizedQuery = query.toLowerCase();
+  if (requiredTerms?.length) {
+    return requiredTerms.some((term) =>
+      searchable.includes(term.toLowerCase().replace(/\s+/g, " ").trim()),
+    );
+  }
 
   const requiredGroup = productTermGroups.find((terms) =>
     terms.some((term) => normalizedQuery.includes(term)),
@@ -704,11 +713,11 @@ function queryRelevanceScore(item: NaverShoppingItem, query: string): number {
 function itemQualityScore(item: NaverShoppingItem, query: string): number {
   const title = stripHtml(item.title);
   let score = 0;
-  if (title.length <= 55) score += 8;
+  if (title.length <= 55) score += 4;
   else if (title.length >= 100) score -= 14;
-  else if (title.length >= 75) score -= 6;
-  if (item.brand || item.maker) score += 4;
-  score += Math.round(queryRelevanceScore(item, query) * 12);
+  else if (title.length >= 75) score -= 7;
+  if (item.brand || item.maker) score += 2;
+  score += Math.round(queryRelevanceScore(item, query) * 7);
   return score;
 }
 
@@ -831,7 +840,9 @@ export async function searchLiveProducts(
           .flat()
           .filter((entry) => entry.groupId === group.id)
           .filter(({ item }) => !isLowQualityItem(item, message))
-          .filter(({ item, query }) => isRelevantToQuery(item, query))
+          .filter(({ item, query }) =>
+            isRelevantToQuery(item, query, group.requiredTerms),
+          )
           .filter(({ item }) =>
             isInBudgetRange(item, message, analysis.budgetValue),
           )

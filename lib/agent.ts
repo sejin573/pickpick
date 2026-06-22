@@ -147,7 +147,7 @@ function contextualBudgetScore(
   if (priceBand) {
     const amount = priceBand[1];
     const bandSize = 10 ** Math.max(0, amount.length - 1) * 10000;
-    if (price >= budget && price < budget + bandSize) return 30;
+    if (price >= budget && price < budget + bandSize) return 24;
     return -35;
   }
 
@@ -186,7 +186,7 @@ function scoreProduct(
   ].join(" ");
 
   const matched = analysis.keywords.filter((keyword) => searchable.includes(keyword));
-  let score = 20 + matched.length * 8;
+  let score = 15 + matched.length * 8;
   score += contextualBudgetScore(product.price, analysis.budgetValue, message);
   score += product.practicalScore * 0.1;
   score += product.emotionalScore * 0.06;
@@ -204,13 +204,13 @@ function scoreProduct(
   }
 
   if (typeof product.popularityRank === "number") {
-    score += Math.max(0, 12 - product.popularityRank * 0.25);
+    score += Math.max(0, 8 - product.popularityRank * 0.2);
   }
 
   if (product.mallName) {
     const mall = product.mallName;
     if (MAJOR_MALLS.some((name) => mall.includes(name))) {
-      score += 4;
+      score += 3;
     }
   }
 

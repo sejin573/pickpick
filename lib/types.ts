@@ -88,6 +88,7 @@ export interface SearchPlanGroup {
   subtitle: string;
   category: string;
   queries: string[];
+  requiredTerms?: string[];
 }
 
 export interface ComparisonItem {
