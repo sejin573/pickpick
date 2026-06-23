@@ -10,11 +10,13 @@ const browserPath =
   process.env.BROWSER_PATH ??
   "C:\\Program Files (x86)\\Microsoft\\Edge\\Application\\msedge.exe";
 const port = 9224;
-const fps = 8;
+const width = 1920;
+const height = 1080;
+const fps = 12;
 const profileDir = path.join(os.tmpdir(), `pickpick-video-${Date.now()}`);
 const frameDir = path.join(os.tmpdir(), `pickpick-frames-${Date.now()}`);
 const outputDir = path.resolve("docs", "videos");
-const outputPath = path.join(outputDir, "pickpick-demo-v180.mp4");
+const outputPath = path.join(outputDir, "pickpick-demo-v182-1080p.mp4");
 
 const sleep = (milliseconds) =>
   new Promise((resolve) => setTimeout(resolve, milliseconds));
@@ -98,6 +100,16 @@ async function waitForText(client, text, timeout = 70_000) {
   throw new Error(`Timed out waiting for page text: ${text}`);
 }
 
+async function waitForExpression(client, expression, timeout = 70_000) {
+  const startedAt = Date.now();
+  while (Date.now() - startedAt < timeout) {
+    const result = await evaluate(client, expression);
+    if (result.result.value) return;
+    await sleep(500);
+  }
+  throw new Error(`Timed out waiting for expression: ${expression}`);
+}
+
 async function addCaption(client, text) {
   await evaluate(
     client,
@@ -117,7 +129,7 @@ async function addCaption(client, text) {
           color: "white",
           background: "rgba(15, 12, 24, 0.88)",
           boxShadow: "0 12px 40px rgba(20, 10, 50, 0.24)",
-          font: "600 15px Pretendard, sans-serif",
+          font: "600 18px Pretendard, sans-serif",
           transition: "opacity .25s ease",
           pointerEvents: "none"
         });
@@ -163,9 +175,9 @@ async function encodeVideo() {
         "-c:v",
         "libx264",
         "-preset",
-        "medium",
+        "slow",
         "-crf",
-        "23",
+        "18",
         "-pix_fmt",
         "yuv420p",
         "-movflags",
@@ -192,7 +204,7 @@ const browser = spawn(
     "--hide-scrollbars",
     `--remote-debugging-port=${port}`,
     `--user-data-dir=${profileDir}`,
-    "--window-size=1280,720",
+    `--window-size=${width},${height}`,
     `${siteUrl}?demo=${Date.now()}`,
   ],
   { stdio: "ignore" },
@@ -200,8 +212,17 @@ const browser = spawn(
 
 let recording = true;
 let frameNumber = 0;
-let lastFrameAt = 0;
+let recordingStartedAt = 0;
+let lastFrameData = null;
 const frameWrites = [];
+
+function writeFrame(data) {
+  const frameName = `frame-${String(frameNumber).padStart(5, "0")}.jpg`;
+  frameNumber += 1;
+  frameWrites.push(
+    writeFile(path.join(frameDir, frameName), Buffer.from(data, "base64")),
+  );
+}
 
 try {
   await waitForJson(`http://127.0.0.1:${port}/json/version`);
@@ -214,32 +235,32 @@ try {
     await client.send("Page.enable");
     await client.send("Runtime.enable");
     await client.send("Emulation.setDeviceMetricsOverride", {
-      width: 1280,
-      height: 720,
+      width,
+      height,
       deviceScaleFactor: 1,
       mobile: false,
     });
     await waitForText(client, "어떤 상품을 찾고 있나요?");
 
-    client.on("Page.screencastFrame", ({ data, sessionId, metadata }) => {
+    recordingStartedAt = Date.now();
+    client.on("Page.screencastFrame", ({ data, sessionId }) => {
       client.send("Page.screencastFrameAck", { sessionId }).catch(() => {});
       if (!recording) return;
-      const capturedAt = metadata?.timestamp
-        ? metadata.timestamp * 1000
-        : Date.now();
-      if (capturedAt - lastFrameAt < 1000 / fps) return;
-      lastFrameAt = capturedAt;
-      const frameName = `frame-${String(frameNumber).padStart(5, "0")}.jpg`;
-      frameNumber += 1;
-      frameWrites.push(
-        writeFile(path.join(frameDir, frameName), Buffer.from(data, "base64")),
-      );
+      const expectedFrameCount =
+        Math.floor(((Date.now() - recordingStartedAt) / 1000) * fps) + 1;
+      while (lastFrameData && frameNumber < expectedFrameCount - 1) {
+        writeFrame(lastFrameData);
+      }
+      lastFrameData = data;
+      if (frameNumber < expectedFrameCount) {
+        writeFrame(data);
+      }
     });
     await client.send("Page.startScreencast", {
       format: "jpeg",
-      quality: 84,
-      maxWidth: 1280,
-      maxHeight: 720,
+      quality: 94,
+      maxWidth: width,
+      maxHeight: height,
       everyNthFrame: 1,
     });
     await evaluate(
@@ -251,7 +272,7 @@ try {
           width: "1px",
           height: "1px",
           opacity: "0.001",
-          animation: "pickpick-capture-pulse .2s linear infinite"
+          animation: "pickpick-capture-pulse .08s linear infinite"
         });
         const style = document.createElement("style");
         style.textContent =
@@ -261,8 +282,8 @@ try {
       })()`,
     );
 
-    await addCaption(client, "자연어 한 문장으로 실제 판매 상품을 추천받습니다");
-    await sleep(2_200);
+    await addCaption(client, "PickPick은 자연어로 실제 판매 상품을 찾고 비교합니다");
+    await sleep(2_800);
 
     await evaluate(
       client,
@@ -271,7 +292,32 @@ try {
       ))?.click()`,
     );
     await waitForText(client, "PickPick에 로그인");
-    await addCaption(client, "최초 이메일 인증 후 비밀번호로 바로 로그인합니다");
+    await addCaption(client, "이메일과 비밀번호로 로그인하고 대화를 저장합니다");
+    await sleep(2_800);
+    await evaluate(
+      client,
+      `([...document.querySelectorAll("button")].find((item) =>
+        item.innerText.trim() === "회원가입"
+      ))?.click()`,
+    );
+    await waitForText(client, "PickPick 회원가입");
+    await addCaption(client, "신규 가입은 최초 한 번만 이메일 인증을 진행합니다");
+    await sleep(2_800);
+    await evaluate(
+      client,
+      `([...document.querySelectorAll("button")].find((item) =>
+        item.innerText.trim() === "로그인"
+      ))?.click()`,
+    );
+    await sleep(500);
+    await evaluate(
+      client,
+      `([...document.querySelectorAll("button")].find((item) =>
+        item.innerText.includes("비밀번호를 잊으셨나요")
+      ))?.click()`,
+    );
+    await waitForText(client, "비밀번호 재설정");
+    await addCaption(client, "비밀번호를 잊은 경우 이메일로 재설정할 수 있습니다");
     await sleep(2_500);
     await evaluate(
       client,
@@ -280,28 +326,17 @@ try {
 
     await addCaption(client, "추천받고 싶은 상황과 예산을 입력합니다");
     await typeQuery(client, "친구 집들이 선물 30만원대 추천해줘");
-    await sleep(900);
+    await sleep(1_300);
     await evaluate(
       client,
       `document.querySelector('button[aria-label="추천 요청 보내기"]')?.click()`,
     );
 
-    await addCaption(client, "AI가 요청을 분석하고 실제 판매 상품을 검색합니다");
+    await addCaption(client, "요청을 분석하고 네이버의 실제 판매 상품을 검색합니다");
     await waitForText(client, "예산대별로 나눠서 골라봤어요");
-    await sleep(1_500);
-    await evaluate(
-      client,
-      `(() => {
-        const section = [...document.querySelectorAll("section")].find((item) =>
-          item.innerText.includes("예산대별로 나눠서 골라봤어요")
-        );
-        if (section) {
-          section.scrollIntoView({ behavior: "smooth", block: "start" });
-        }
-      })()`,
-    );
+    await sleep(2_000);
     await addCaption(client, "요청한 30만원대를 먼저, 앞뒤 가격대도 함께 비교합니다");
-    await sleep(3_500);
+    await sleep(3_800);
 
     await evaluate(
       client,
@@ -309,16 +344,69 @@ try {
         item.innerText.trim() === "20만원대"
       ))?.click()`,
     );
-    await addCaption(client, "카테고리별 실제 상품과 가격·추천 근거를 확인합니다");
-    await sleep(3_000);
+    await addCaption(client, "가격대를 바꾸면 해당 예산의 상품이 바로 전환됩니다");
+    await sleep(3_200);
 
     await evaluate(
       client,
-      `window.scrollBy({ top: 650, behavior: "smooth" })`,
+      `(() => {
+        const section = [...document.querySelectorAll("section")].find((item) =>
+          item.innerText.includes("예산대별로 나눠서 골라봤어요")
+        );
+        const buttons = section
+          ? [...section.querySelectorAll("button")].filter((item) =>
+              /\\d{2}/.test(item.innerText)
+            )
+          : [];
+        buttons[1]?.click();
+      })()`,
     );
-    await addCaption(client, "비교표와 구매 전 확인사항까지 한 흐름으로 제공합니다");
+    await addCaption(client, "카테고리별 상품 이미지·가격·추천 이유를 비교합니다");
+    await sleep(3_500);
+
+    await evaluate(
+      client,
+      `(() => {
+        const heading = [...document.querySelectorAll("h2")].find((item) =>
+          item.innerText.includes("한눈에 비교해 보세요")
+        );
+        heading?.scrollIntoView({ behavior: "smooth", block: "start" });
+      })()`,
+    );
+    await addCaption(client, "비교표와 구매 전 확인사항으로 선택을 도와줍니다");
     await sleep(3_200);
 
+    await addCaption(client, "마음에 들지 않으면 같은 채팅에서 다시 요청할 수 있습니다");
+    await typeQuery(client, "다른 상품도 추천해줘");
+    await sleep(1_300);
+    const recommendationCountBefore = await evaluate(
+      client,
+      `[...document.querySelectorAll("section")].filter((item) =>
+        item.innerText.includes("예산대별로 나눠서 골라봤어요")
+      ).length`,
+    );
+    await evaluate(
+      client,
+      `document.querySelector('button[aria-label="추천 요청 보내기"]')?.click()`,
+    );
+    await addCaption(client, "질문 말풍선을 먼저 보여주고 새로운 상품을 검색합니다");
+    await sleep(2_500);
+    await waitForExpression(
+      client,
+      `[...document.querySelectorAll("section")].filter((item) =>
+        item.innerText.includes("예산대별로 나눠서 골라봤어요")
+      ).length > ${recommendationCountBefore.result.value}`,
+    );
+    await sleep(2_000);
+    await addCaption(client, "이전 상품은 제외하고 새 추천 카드로 이동합니다");
+    await sleep(4_000);
+
+    const expectedFinalFrame = Math.ceil(
+      ((Date.now() - recordingStartedAt) / 1000) * fps,
+    );
+    while (lastFrameData && frameNumber < expectedFinalFrame) {
+      writeFrame(lastFrameData);
+    }
     recording = false;
     await client.send("Page.stopScreencast");
     await Promise.all(frameWrites);
