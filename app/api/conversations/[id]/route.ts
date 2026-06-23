@@ -52,19 +52,39 @@ export async function GET(_: Request, context: Context) {
     return NextResponse.json({ error: "메시지를 불러오지 못했습니다." }, { status: 500 });
   }
 
-  const userMessage = messages?.find((item) => item.role === "user")?.content;
-  const assistantMessage = messages?.find((item) => item.role === "assistant");
-  const payload = assistantMessage?.payload;
-  if (!userMessage || !payload) {
+  const turns = [];
+  let pendingUserMessage: {
+    content: string;
+    created_at: string;
+  } | null = null;
+  for (const message of messages ?? []) {
+    if (message.role === "user") {
+      pendingUserMessage = {
+        content: message.content,
+        created_at: message.created_at,
+      };
+      continue;
+    }
+    if (!pendingUserMessage || !message.payload) continue;
+    const snapshot = isStoredSnapshot(message.payload)
+      ? message.payload
+      : {
+          snapshotVersion: 0,
+          savedAt: message.created_at,
+          response: message.payload as RecommendResponse,
+        };
+    turns.push({
+      id: `${message.created_at}-${turns.length}`,
+      userMessage: pendingUserMessage.content,
+      response: snapshot.response,
+      snapshotVersion: snapshot.snapshotVersion,
+      savedAt: snapshot.savedAt,
+    });
+    pendingUserMessage = null;
+  }
+  if (turns.length === 0) {
     return NextResponse.json({ error: "저장된 대화가 올바르지 않습니다." }, { status: 500 });
   }
-  const snapshot = isStoredSnapshot(payload)
-    ? payload
-    : {
-        snapshotVersion: 0,
-        savedAt: assistantMessage.created_at,
-        response: payload as RecommendResponse,
-      };
 
   return NextResponse.json({
     conversation: {
@@ -72,10 +92,7 @@ export async function GET(_: Request, context: Context) {
       title: conversation.title,
       createdAt: conversation.created_at,
       updatedAt: conversation.updated_at,
-      userMessage,
-      response: snapshot.response,
-      snapshotVersion: snapshot.snapshotVersion,
-      savedAt: snapshot.savedAt,
+      turns,
     },
   });
 }

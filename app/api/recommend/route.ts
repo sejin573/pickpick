@@ -103,25 +103,63 @@ export async function POST(request: Request) {
       );
     }
 
-    const analysis = analyzeMessage(message);
-    const queryPlan = await planSearchGroups(
-      message,
-      analysis,
-      buildSearchGroups(message, analysis),
+    const contextMessages = Array.isArray(body.context?.messages)
+      ? body.context.messages
+          .filter((item): item is string => typeof item === "string")
+          .map((item) => item.trim().slice(0, MAX_MESSAGE_LENGTH))
+          .filter(Boolean)
+          .slice(-6)
+      : [];
+    const isFollowUp =
+      contextMessages.length > 0 &&
+      /다른|말고|또|새로운|비슷한|조금 더|더 보여|다시|만원|예산|색상|가벼운|저렴|비싼/.test(
+        message,
+      );
+    const contextualMessage = isFollowUp
+      ? `${contextMessages[0]} 이어지는 요청: ${message}. 이전 추천과 겹치지 않는 다른 상품을 추천해줘.`
+      : message;
+    const excludedProductIds = new Set(
+      Array.isArray(body.context?.excludedProductIds)
+        ? body.context.excludedProductIds
+            .filter((item): item is string => typeof item === "string")
+            .map((item) => item.slice(0, 200))
+            .slice(0, 100)
+        : [],
     );
-    const liveCatalog = await searchLiveProducts(
-      message,
+
+    const analysis = analyzeMessage(contextualMessage);
+    const queryPlan = await planSearchGroups(
+      contextualMessage,
+      analysis,
+      buildSearchGroups(contextualMessage, analysis),
+    );
+    let liveCatalog = await searchLiveProducts(
+      contextualMessage,
       analysis,
       queryPlan.groups,
     );
+    if (liveCatalog && excludedProductIds.size > 0) {
+      liveCatalog.groups = liveCatalog.groups
+        .map((group) => ({
+          ...group,
+          products: group.products.filter(
+            (product) => !excludedProductIds.has(product.id),
+          ),
+        }))
+        .filter((group) => group.products.length >= 3);
+      liveCatalog.products = liveCatalog.groups.flatMap(
+        (group) => group.products,
+      );
+      if (liveCatalog.groups.length === 0) liveCatalog = null;
+    }
     const budgetUnspecified = analysis.budgetValue === null;
-    const adjacentPriceBands = buildAdjacentPriceBands(message);
+    const adjacentPriceBands = buildAdjacentPriceBands(contextualMessage);
     const fallback = liveCatalog
-      ? fallbackRecommend(message, liveCatalog.groups[0].products, {
+      ? fallbackRecommend(contextualMessage, liveCatalog.groups[0].products, {
           provider: liveCatalog.provider,
           label: liveCatalog.label,
         })
-      : fallbackRecommend(message);
+      : fallbackRecommend(contextualMessage);
     if (fallback.meta) {
       fallback.meta.queryPlanningMode = queryPlan.mode;
     }
@@ -150,7 +188,7 @@ export async function POST(request: Request) {
             const candidateProducts =
               uniqueProducts.length >= 3 ? uniqueProducts : products;
             const groupResult = fallbackRecommend(
-              message,
+              contextualMessage,
               candidateProducts,
               {
                 provider: liveCatalog.provider,
@@ -190,7 +228,7 @@ export async function POST(request: Request) {
             Object.assign(
               fallback,
               buildDecisionSupport(
-                message,
+                contextualMessage,
                 primaryGroup.recommendations,
                 baseGroups.flatMap((group) => group.products),
               ),
@@ -214,7 +252,7 @@ export async function POST(request: Request) {
           );
           const candidateProducts =
             uniqueProducts.length >= 3 ? uniqueProducts : group.products;
-          const groupResult = fallbackRecommend(message, candidateProducts, {
+          const groupResult = fallbackRecommend(contextualMessage, candidateProducts, {
             provider: liveCatalog.provider,
             label: liveCatalog.label,
           });
@@ -244,7 +282,7 @@ export async function POST(request: Request) {
     }
 
     const result = await enhanceRecommendation(
-      message,
+      contextualMessage,
       fallback,
       liveCatalog?.groups.slice(0, 3),
     );

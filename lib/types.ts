@@ -129,6 +129,10 @@ export interface RecommendResponse {
 
 export interface RecommendRequest {
   message: string;
+  context?: {
+    messages: string[];
+    excludedProductIds?: string[];
+  };
 }
 
 export interface ConversationSummary {
@@ -139,6 +143,11 @@ export interface ConversationSummary {
 }
 
 export interface StoredConversation extends ConversationSummary {
+  turns: ConversationTurn[];
+}
+
+export interface ConversationTurn {
+  id: string;
   userMessage: string;
   response: RecommendResponse;
   snapshotVersion: number;

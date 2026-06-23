@@ -282,7 +282,7 @@ export function buildSearchGroups(
 
   const explicitProductTerms = [
     "노트북", "헤드폰", "이어폰", "키보드", "모니터", "향수", "지갑",
-    "마사지기", "혈압계", "캐리어", "카메라", "가습기", "에어프라이어",
+    "마사지기", "체중계", "캐리어", "카메라", "가습기", "에어프라이어",
     "스마트워치", "의자", "드라이어", "프로젝터",
   ].filter((keyword) => message.includes(keyword));
   if (explicitProductTerms.length) {
@@ -395,7 +395,7 @@ export function buildSearchGroups(
         title: "매일 챙기는 건강 선물",
         subtitle: "부담 없이 꾸준히 활용할 수 있는 건강 관리 상품이에요.",
         category: "건강",
-        queries: ["프리미엄 마사지기", "스마트 혈압계"],
+        queries: ["프리미엄 마사지기", "온열 찜질기"],
       },
       {
         id: "smart-health",
@@ -473,7 +473,7 @@ export function buildSearchGroups(
         title: "꾸준히 관리하는 건강 기기",
         subtitle: "일상에서 건강 상태를 확인하고 기록할 수 있어요.",
         category: "건강",
-        queries: ["스마트 혈압계", "체성분 체중계", "건강 스마트워치"],
+        queries: ["체성분 체중계", "건강 스마트워치", "온열 찜질기"],
       },
       {
         id: "recovery",
@@ -587,6 +587,7 @@ function isLowQualityItem(item: NaverShoppingItem, message: string): boolean {
     "현수막", "풍선", "프로포즈 용품", "답프로포즈", "용돈박스",
     "포장지", "쇼핑백", "스티커", "엽서", "산업용", "업소용",
     "탐지기", "열화상카메라", "교체용", "호환필터", "호환 필터",
+    "혈압", "혈압계", "혈압측정기", "혈압 측정기",
   ];
   if (alwaysExcluded.some((keyword) => text.includes(keyword))) return true;
 
@@ -638,7 +639,6 @@ const productTermGroups: string[][] = [
   ["커피머신", "에스프레소 머신"],
   ["마사지기", "안마기", "마사지건"],
   ["찜질기", "온열패드", "온열 매트"],
-  ["혈압계"],
   ["체중계", "체성분계"],
   ["캐리어", "여행가방"],
   ["카메라"],

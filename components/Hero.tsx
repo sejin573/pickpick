@@ -21,7 +21,7 @@ export default function Hero({
 }: HeroProps) {
   const input = (
     <div className={`mx-auto w-full ${compact ? "max-w-4xl" : "max-w-3xl"}`}>
-      <div className="flex items-end gap-2 rounded-[1.75rem] border border-zinc-200 bg-white p-2.5 shadow-[0_14px_50px_rgba(24,18,50,0.10)] transition focus-within:border-violet-300 focus-within:shadow-[0_18px_60px_rgba(92,65,180,0.14)]">
+      <div className="flex min-w-0 items-end gap-2 overflow-hidden rounded-[1.75rem] border border-zinc-200 bg-white p-2.5 shadow-[0_14px_50px_rgba(24,18,50,0.10)] transition focus-within:border-violet-300 focus-within:shadow-[0_18px_60px_rgba(92,65,180,0.14)]">
         <textarea
           value={message}
           onChange={(event) => onMessageChange(event.target.value)}
@@ -33,8 +33,12 @@ export default function Hero({
           }}
           rows={compact ? 1 : 2}
           maxLength={500}
-          placeholder="누구를 위한 어떤 상품을 찾고 있나요?"
-          className="max-h-40 min-h-11 flex-1 resize-none border-0 bg-transparent px-3 py-3 text-[15px] leading-6 text-ink outline-none placeholder:text-zinc-400"
+          placeholder={
+            compact
+              ? "다른 상품이나 조건을 이어서 말해보세요"
+              : "누구를 위한 어떤 상품을 찾고 있나요?"
+          }
+          className="max-h-40 min-h-11 min-w-0 flex-1 resize-none border-0 bg-transparent px-3 py-3 text-[15px] leading-6 text-ink outline-none placeholder:text-zinc-400"
           aria-label="추천 상황 입력"
         />
         <button
@@ -89,8 +93,8 @@ export default function Hero({
           </button>
         </header>
 
-        <div className="pointer-events-none fixed inset-x-0 bottom-0 z-40">
-          <div className="composer-dock-in pointer-events-auto bg-gradient-to-t from-white via-white/95 to-white/0 px-4 pb-5 pt-10 sm:px-6 sm:pb-6">
+        <div className="pointer-events-none fixed inset-x-0 bottom-0 z-40 lg:left-[286px]">
+          <div className="composer-dock-in pointer-events-auto bg-gradient-to-t from-white via-white/95 to-white/0 px-4 pb-[max(1.25rem,env(safe-area-inset-bottom))] pt-10 sm:px-6 sm:pb-[max(1.5rem,env(safe-area-inset-bottom))]">
             <div className="page-shell">{input}</div>
           </div>
         </div>

@@ -53,6 +53,7 @@ export async function POST(request: Request) {
   }
 
   const body = (await request.json()) as {
+    conversationId?: string;
     title?: string;
     userMessage?: string;
     response?: RecommendResponse;
@@ -67,11 +68,22 @@ export async function POST(request: Request) {
 
   const title = (body.title?.trim() || userMessage).slice(0, 60);
   const savedAt = new Date().toISOString();
-  const { data: conversation, error: conversationError } = await supabase
-    .from("conversations")
-    .insert({ user_id: userId, title })
-    .select("id,title,created_at,updated_at")
-    .single();
+  const existingConversationId = body.conversationId?.trim();
+  const conversationQuery = existingConversationId
+    ? supabase
+        .from("conversations")
+        .update({ updated_at: savedAt })
+        .eq("id", existingConversationId)
+        .eq("user_id", userId)
+        .select("id,title,created_at,updated_at")
+        .single()
+    : supabase
+        .from("conversations")
+        .insert({ user_id: userId, title })
+        .select("id,title,created_at,updated_at")
+        .single();
+  const { data: conversation, error: conversationError } =
+    await conversationQuery;
 
   if (conversationError || !conversation) {
     console.error("[conversations] create failed", conversationError);
@@ -81,14 +93,19 @@ export async function POST(request: Request) {
     );
   }
 
-  const { error: messageError } = await supabase.from("messages").insert([
-    {
+  const { data: userMessageRow, error: userMessageError } = await supabase
+    .from("messages")
+    .insert({
       conversation_id: conversation.id,
       user_id: userId,
       role: "user",
       content: userMessage,
-    },
-    {
+    })
+    .select("id")
+    .single();
+  const { error: assistantMessageError } = userMessageError
+    ? { error: userMessageError }
+    : await supabase.from("messages").insert({
       conversation_id: conversation.id,
       user_id: userId,
       role: "assistant",
@@ -98,12 +115,19 @@ export async function POST(request: Request) {
         savedAt,
         response: body.response,
       },
-    },
-  ]);
+    });
 
-  if (messageError) {
-    await supabase.from("conversations").delete().eq("id", conversation.id);
-    console.error("[conversations] message create failed", messageError);
+  if (userMessageError || assistantMessageError) {
+    if (userMessageRow?.id) {
+      await supabase.from("messages").delete().eq("id", userMessageRow.id);
+    }
+    if (!existingConversationId) {
+      await supabase.from("conversations").delete().eq("id", conversation.id);
+    }
+    console.error(
+      "[conversations] message create failed",
+      userMessageError ?? assistantMessageError,
+    );
     return NextResponse.json(
       { error: "대화 메시지를 저장하지 못했습니다." },
       { status: 500 },
@@ -120,6 +144,6 @@ export async function POST(request: Request) {
         savedAt,
       },
     },
-    { status: 201 },
+    { status: existingConversationId ? 200 : 201 },
   );
 }

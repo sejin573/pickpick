@@ -22,6 +22,7 @@ import RecommendationCards from "@/components/RecommendationCards";
 import ServiceInfo from "@/components/ServiceInfo";
 import { createClient } from "@/lib/supabase/client";
 import {
+  ConversationTurn,
   ConversationSummary,
   RecommendResponse,
   StoredConversation,
@@ -29,41 +30,147 @@ import {
 
 function ChatItem({
   delay = 0,
+  follow = false,
   children,
 }: {
   delay?: number;
+  follow?: boolean;
   children: ReactNode;
 }) {
   const itemRef = useRef<HTMLDivElement>(null);
-  const [visible, setVisible] = useState(false);
+  const [visible, setVisible] = useState(!follow);
 
   useEffect(() => {
-    const element = itemRef.current;
-    if (!element) return;
-
-    const observer = new IntersectionObserver(
-      ([entry]) => {
-        if (!entry.isIntersecting) return;
-        setVisible(true);
-        observer.disconnect();
-      },
-      {
-        rootMargin: "0px 0px -10% 0px",
-        threshold: 0.08,
-      },
-    );
-
-    observer.observe(element);
-    return () => observer.disconnect();
-  }, []);
+    if (!follow) return;
+    const timer = window.setTimeout(() => {
+      setVisible(true);
+      window.setTimeout(() => {
+        itemRef.current?.scrollIntoView({
+          behavior: "smooth",
+          block: "end",
+        });
+        window.setTimeout(
+          () => window.scrollBy({ top: 150, behavior: "smooth" }),
+          220,
+        );
+      }, 80);
+    }, delay * 1000);
+    return () => window.clearTimeout(timer);
+  }, [delay, follow]);
 
   return (
     <div
       ref={itemRef}
       className={visible ? "scroll-reveal is-visible" : "scroll-reveal"}
-      style={{ transitionDelay: `${delay}s` }}
     >
       {children}
+    </div>
+  );
+}
+
+function RecommendationTurn({
+  turn,
+  latest,
+  onSelectPrompt,
+}: {
+  turn: ConversationTurn;
+  latest: boolean;
+  onSelectPrompt: (prompt: string) => void;
+}) {
+  const meta = turn.response.meta;
+  return (
+    <div className="space-y-6">
+      <ChatItem follow={latest}>
+        <div className="flex justify-end">
+          <div className="max-w-[88%] rounded-2xl rounded-tr-md bg-violet-600 px-4 py-3 text-[15px] leading-6 text-white shadow-sm sm:max-w-[70%]">
+            {turn.userMessage}
+          </div>
+        </div>
+      </ChatItem>
+
+      <ChatItem delay={0.12} follow={latest}>
+        <ChatProgress complete />
+      </ChatItem>
+
+      {turn.snapshotVersion >= 0 && (
+        <ChatItem delay={0.24} follow={latest}>
+          <div className="flex items-center justify-center gap-2 text-center text-[11px] font-medium text-zinc-400">
+            <span className="h-1.5 w-1.5 rounded-full bg-violet-500" />
+            <span>
+              {new Intl.DateTimeFormat("ko-KR", {
+                year: "numeric",
+                month: "long",
+                day: "numeric",
+                hour: "2-digit",
+                minute: "2-digit",
+              }).format(new Date(turn.savedAt))}
+              에 저장된 당시 상품 정보입니다
+            </span>
+          </div>
+        </ChatItem>
+      )}
+
+      {meta && (
+        <ChatItem delay={0.34} follow={latest}>
+          <p className="flex flex-wrap items-center justify-center gap-x-3 gap-y-1 text-[11px] font-medium text-zinc-400">
+            <span className="flex items-center gap-1.5">
+              <span
+                className={`h-1.5 w-1.5 rounded-full ${
+                  meta.catalogProvider === "naver"
+                    ? "bg-emerald-500"
+                    : "bg-violet-500"
+                }`}
+              />
+              {meta.catalogLabel ?? "PickPick 상품 데이터"}
+            </span>
+            <span className="text-zinc-300">·</span>
+            <span>CATALOG {(meta.catalogProvider ?? "sample").toUpperCase()}</span>
+            <span className="text-zinc-300">·</span>
+            <span>AGENT {(meta.selectionMode ?? "rules").toUpperCase()}</span>
+          </p>
+        </ChatItem>
+      )}
+
+      {meta?.notice && (
+        <ChatItem delay={0.46} follow={latest}>
+          <div className="rounded-2xl border border-amber-200 bg-amber-50 px-5 py-4 text-sm text-amber-800">
+            {meta.notice}
+          </div>
+        </ChatItem>
+      )}
+
+      <ChatItem delay={0.55} follow={latest}>
+        <AnalysisPanel analysis={turn.response.analysis} />
+      </ChatItem>
+      <ChatItem delay={0.9} follow={latest}>
+        <AssistantMessage wide>
+          <RecommendationCards
+            recommendations={turn.response.recommendations}
+            groups={turn.response.recommendationGroups}
+            priceBands={turn.response.priceBands}
+          />
+        </AssistantMessage>
+      </ChatItem>
+      <ChatItem delay={1.25} follow={latest}>
+        <AssistantMessage wide>
+          <AgentSteps steps={turn.response.agentSteps} />
+        </AssistantMessage>
+      </ChatItem>
+      <ChatItem delay={1.55} follow={latest}>
+        <AssistantMessage wide>
+          <ComparisonTable items={turn.response.comparison} />
+        </AssistantMessage>
+      </ChatItem>
+      <ChatItem delay={1.85} follow={latest}>
+        <AssistantMessage wide>
+          <BuyingGuide guide={turn.response.buyingGuide} />
+        </AssistantMessage>
+      </ChatItem>
+      <ChatItem delay={2.1} follow={latest}>
+        <AssistantMessage wide>
+          <ServiceInfo onSelect={onSelectPrompt} meta={turn.response.meta} />
+        </AssistantMessage>
+      </ChatItem>
     </div>
   );
 }
@@ -74,8 +181,9 @@ export default function Home() {
       process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY,
   );
   const [message, setMessage] = useState("");
-  const [submittedMessage, setSubmittedMessage] = useState("");
-  const [result, setResult] = useState<RecommendResponse | null>(null);
+  const [turns, setTurns] = useState<ConversationTurn[]>([]);
+  const [pendingMessage, setPendingMessage] = useState("");
+  const [animatedTurnId, setAnimatedTurnId] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [user, setUser] = useState<User | null>(null);
@@ -86,7 +194,6 @@ export default function Home() {
   const [activeConversationId, setActiveConversationId] = useState<string | null>(
     null,
   );
-  const [snapshotSavedAt, setSnapshotSavedAt] = useState<string | null>(null);
   const resultRef = useRef<HTMLDivElement>(null);
   const requestControllerRef = useRef<AbortController | null>(null);
   const requestIdRef = useRef(0);
@@ -139,20 +246,23 @@ export default function Home() {
   const selectPrompt = (prompt: string) => {
     setMessage(prompt);
     setError("");
-    window.scrollTo({ top: 0, behavior: "smooth" });
+    window.scrollTo({
+      top: document.documentElement.scrollHeight,
+      behavior: "smooth",
+    });
   };
 
   const resetToHome = () => {
     requestIdRef.current += 1;
     requestControllerRef.current?.abort();
     requestControllerRef.current = null;
-    setResult(null);
+    setTurns([]);
     setMessage("");
-    setSubmittedMessage("");
+    setPendingMessage("");
+    setAnimatedTurnId(null);
     setError("");
     setLoading(false);
     setActiveConversationId(null);
-    setSnapshotSavedAt(null);
     setSidebarOpen(false);
     window.scrollTo({ top: 0, behavior: "smooth" });
   };
@@ -160,27 +270,29 @@ export default function Home() {
   const saveConversation = async (
     userMessage: string,
     responseData: RecommendResponse,
+    conversationId: string | null,
   ) => {
-    if (!user || !supabaseConfigured) return;
+    if (!user || !supabaseConfigured) return null;
     const response = await fetch("/api/conversations", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
+        conversationId,
         title: userMessage.slice(0, 60),
         userMessage,
         response: responseData,
       }),
     });
-    if (!response.ok) return;
+    if (!response.ok) return null;
     const data = (await response.json()) as {
       conversation: ConversationSummary & { savedAt: string };
     };
     setActiveConversationId(data.conversation.id);
-    setSnapshotSavedAt(data.conversation.savedAt);
     setConversations((current) => [
       data.conversation,
       ...current.filter((item) => item.id !== data.conversation.id),
     ]);
+    return data.conversation;
   };
 
   const requestRecommendation = async () => {
@@ -198,9 +310,10 @@ export default function Home() {
     requestIdRef.current = requestId;
 
     setLoading(true);
-    setSubmittedMessage(trimmed);
-    setResult(null);
-    setSnapshotSavedAt(null);
+    const conversationId = activeConversationId;
+    const previousTurns = turns;
+    setPendingMessage(trimmed);
+    setMessage("");
     setError("");
     window.setTimeout(
       () => resultRef.current?.scrollIntoView({ behavior: "smooth" }),
@@ -210,7 +323,20 @@ export default function Home() {
       const response = await fetch("/api/recommend", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ message: trimmed }),
+        body: JSON.stringify({
+          message: trimmed,
+          context: {
+            messages: previousTurns.map((turn) => turn.userMessage),
+            excludedProductIds: previousTurns.flatMap((turn) =>
+              (turn.response.recommendationGroups?.length
+                ? turn.response.recommendationGroups.flatMap(
+                    (group) => group.recommendations,
+                  )
+                : turn.response.recommendations
+              ).map((item) => item.id),
+            ),
+          },
+        }),
         signal: controller.signal,
       });
       const data = (await response.json()) as RecommendResponse & {
@@ -219,8 +345,20 @@ export default function Home() {
       if (!response.ok)
         throw new Error(data.error ?? "추천 결과를 불러오지 못했습니다.");
       if (requestId !== requestIdRef.current) return;
-      setResult(data);
-      await saveConversation(trimmed, data);
+      const saved = await saveConversation(trimmed, data, conversationId);
+      const turnId = `${Date.now()}`;
+      setAnimatedTurnId(turnId);
+      setTurns((current) => [
+        ...current,
+        {
+          id: turnId,
+          userMessage: trimmed,
+          response: data,
+          snapshotVersion: saved ? 1 : -1,
+          savedAt: saved?.savedAt ?? new Date().toISOString(),
+        },
+      ]);
+      setPendingMessage("");
     } catch (caught) {
       if (
         controller.signal.aborted ||
@@ -231,6 +369,7 @@ export default function Home() {
       setError(
         caught instanceof Error ? caught.message : "잠시 후 다시 시도해 주세요.",
       );
+      setPendingMessage("");
     } finally {
       if (requestId === requestIdRef.current) {
         requestControllerRef.current = null;
@@ -239,8 +378,7 @@ export default function Home() {
     }
   };
 
-  const showConversation = Boolean(result || loading || submittedMessage);
-  const meta = result?.meta;
+  const showConversation = Boolean(turns.length || loading || pendingMessage);
 
   const openConversation = async (id: string) => {
     setSidebarOpen(false);
@@ -257,11 +395,11 @@ export default function Home() {
       if (!response.ok || !data.conversation) {
         throw new Error(data.error ?? "대화를 불러오지 못했습니다.");
       }
-      setSubmittedMessage(data.conversation.userMessage);
-      setMessage(data.conversation.userMessage);
-      setResult(data.conversation.response);
+      setTurns(data.conversation.turns);
+      setAnimatedTurnId(null);
+      setMessage("");
+      setPendingMessage("");
       setActiveConversationId(id);
-      setSnapshotSavedAt(data.conversation.savedAt);
       window.scrollTo({ top: 0, behavior: "smooth" });
     } catch (caught) {
       setError(
@@ -333,7 +471,7 @@ export default function Home() {
       </button>
       <main
         className={`min-h-screen pt-16 transition-[padding] lg:pl-[286px] lg:pt-8 ${
-          showConversation ? "pb-44 sm:pb-48" : "pb-16"
+          showConversation ? "pb-64 sm:pb-72" : "pb-16"
         }`}
       >
       <div className="page-shell">
@@ -347,114 +485,31 @@ export default function Home() {
           onSubmit={requestRecommendation}
         />
 
-        <div ref={resultRef} className="mt-8 space-y-6 sm:mt-10">
-          {submittedMessage && (
-            <ChatItem>
-              <div className="flex justify-end">
-                <div className="max-w-[80%] rounded-2xl rounded-tr-md bg-violet-600 px-4 py-3 text-[15px] leading-6 text-white shadow-sm sm:max-w-[70%]">
-                  {submittedMessage}
+        <div ref={resultRef} className="mt-8 space-y-12 sm:mt-10">
+          {turns.map((turn, index) => (
+            <RecommendationTurn
+              key={turn.id}
+              turn={turn}
+              latest={
+                index === turns.length - 1 && turn.id === animatedTurnId
+              }
+              onSelectPrompt={selectPrompt}
+            />
+          ))}
+
+          {pendingMessage && (
+            <div className="space-y-6">
+              <ChatItem follow>
+                <div className="flex justify-end">
+                  <div className="max-w-[88%] rounded-2xl rounded-tr-md bg-violet-600 px-4 py-3 text-[15px] leading-6 text-white shadow-sm sm:max-w-[70%]">
+                    {pendingMessage}
+                  </div>
                 </div>
-              </div>
-            </ChatItem>
-          )}
-
-          {(loading || result) && (
-            <ChatItem delay={0.08}>
-              <ChatProgress complete={!loading && Boolean(result)} />
-            </ChatItem>
-          )}
-
-          {result && (
-            <>
-              {snapshotSavedAt && (
-                <ChatItem delay={0.14}>
-                  <div className="flex items-center justify-center gap-2 text-center text-[11px] font-medium text-zinc-400">
-                    <span className="h-1.5 w-1.5 rounded-full bg-violet-500" />
-                    <span>
-                      {new Intl.DateTimeFormat("ko-KR", {
-                        year: "numeric",
-                        month: "long",
-                        day: "numeric",
-                        hour: "2-digit",
-                        minute: "2-digit",
-                      }).format(new Date(snapshotSavedAt))}
-                      에 저장된 당시 상품 정보입니다
-                    </span>
-                  </div>
-                </ChatItem>
-              )}
-
-              {meta && (
-                <ChatItem delay={0.18}>
-                  <p className="flex flex-wrap items-center justify-center gap-x-3 gap-y-1 text-[11px] font-medium text-zinc-400">
-                    <span className="flex items-center gap-1.5">
-                      <span
-                        className={`h-1.5 w-1.5 rounded-full ${
-                          meta.catalogProvider === "naver"
-                            ? "bg-emerald-500"
-                            : "bg-violet-500"
-                        }`}
-                      />
-                      {meta.catalogLabel ?? "PickPick 상품 데이터"}
-                    </span>
-                    <span className="text-zinc-300">·</span>
-                    <span className="tracking-wider">
-                      CATALOG {(meta.catalogProvider ?? "sample").toUpperCase()}
-                    </span>
-                    <span className="text-zinc-300">·</span>
-                    <span className="tracking-wider">
-                      AGENT {(meta.selectionMode ?? "rules").toUpperCase()}
-                    </span>
-                    <span className="text-zinc-300">·</span>
-                    <span className="tracking-wider">
-                      PLAN{" "}
-                      {(meta.queryPlanningMode ?? "rules").toUpperCase()}
-                    </span>
-                  </p>
-                </ChatItem>
-              )}
-
-              {meta?.notice && (
-                <ChatItem delay={0.24}>
-                  <div className="rounded-2xl border border-amber-200 bg-amber-50 px-5 py-4 text-sm text-amber-800">
-                    {meta.notice}
-                  </div>
-                </ChatItem>
-              )}
-
-              <ChatItem delay={0.3}>
-                <AnalysisPanel analysis={result.analysis} />
               </ChatItem>
-              <ChatItem delay={0.42}>
-                <AssistantMessage wide>
-                  <RecommendationCards
-                    recommendations={result.recommendations}
-                    groups={result.recommendationGroups}
-                    priceBands={result.priceBands}
-                  />
-                </AssistantMessage>
+              <ChatItem delay={0.12} follow>
+                <ChatProgress complete={false} />
               </ChatItem>
-              <ChatItem delay={0.54}>
-                <AssistantMessage wide>
-                  <AgentSteps steps={result.agentSteps} />
-                </AssistantMessage>
-              </ChatItem>
-              <ChatItem delay={0.66}>
-                <AssistantMessage wide>
-                  <ComparisonTable items={result.comparison} />
-                </AssistantMessage>
-              </ChatItem>
-              <ChatItem delay={0.78}>
-                <AssistantMessage wide>
-                  <BuyingGuide guide={result.buyingGuide} />
-                </AssistantMessage>
-              </ChatItem>
-              <ChatItem delay={0.9}>
-                <AssistantMessage wide>
-                  <ServiceInfo onSelect={selectPrompt} meta={result.meta} />
-                </AssistantMessage>
-              </ChatItem>
-            </>
+            </div>
           )}
         </div>
 

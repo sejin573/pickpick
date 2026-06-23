@@ -122,12 +122,6 @@ export const products: Product[] = [
     emotionalScore: 62, practicalScore: 98, valueScore: 91, riskScore: 12, description: "이동 중 배터리 걱정을 줄이는 대용량 보조배터리"
   },
   {
-    id: "health-01", name: "스마트 혈압계", category: "건강", price: 129000,
-    tags: ["건강", "부모님", "효도", "실용", "관리"], targetUsers: ["부모님", "중장년", "건강 관심자"],
-    situations: ["효도", "생일", "건강 관리"], strengths: ["간편한 측정 기록", "가족 건강 관리"], cautions: ["의료 진단을 대체하지 않음"],
-    emotionalScore: 80, practicalScore: 97, valueScore: 90, riskScore: 14, description: "측정 결과를 앱에 기록할 수 있는 가정용 혈압계"
-  },
-  {
     id: "health-02", name: "목·어깨 온열 마사지기", category: "건강", price: 99000,
     tags: ["건강", "부모님", "직장인", "피로", "선물"], targetUsers: ["부모님", "직장인", "개발자"],
     situations: ["효도", "생일", "업무 피로"], strengths: ["쉬운 사용", "일상적인 휴식에 도움"], cautions: ["통증 질환이 있으면 전문가 상담"],
