@@ -121,8 +121,48 @@ async function captureInterface(client) {
 
   await evaluate(
     client,
+    `([...document.querySelectorAll("button")].find((item) =>
+      item.innerText.trim() === "회원가입"
+    ))?.click()`,
+  );
+  await waitForText(client, "PickPick 회원가입");
+  await sleep(500);
+  await capture(client, "pickpick-signup-v180.png");
+
+  await evaluate(
+    client,
+    `([...document.querySelectorAll("button")].find((item) =>
+      item.innerText.trim() === "로그인"
+    ))?.click()`,
+  );
+  await sleep(350);
+  await evaluate(
+    client,
+    `([...document.querySelectorAll("button")].find((item) =>
+      item.innerText.includes("비밀번호를 잊으셨나요")
+    ))?.click()`,
+  );
+  await waitForText(client, "가입한 이메일로 비밀번호 재설정");
+  await sleep(500);
+  await capture(client, "pickpick-forgot-password-v180.png");
+
+  await evaluate(
+    client,
     `document.querySelector('button[aria-label="로그인 창 닫기"]')?.click()`,
   );
+
+  await client.send("Page.navigate", {
+    url: `${siteUrl}?resetPassword=1&capture=${Date.now()}`,
+  });
+  await waitForText(client, "새 비밀번호 등록");
+  await sleep(700);
+  await capture(client, "pickpick-reset-password-v180.png");
+  await evaluate(
+    client,
+    `document.querySelector('button[aria-label="로그인 창 닫기"]')?.click()`,
+  );
+
+  await openHome(client);
   await sleep(500);
   await capture(client, "pickpick-sidebar-v160.png", {
     x: 0,

@@ -70,6 +70,24 @@
 
 ![PickPick v1.8.0 로그인 화면](docs/images/pickpick-login-v180.png)
 
+### 최초 회원가입
+
+이메일과 8자 이상의 비밀번호를 등록합니다. 가입 요청 후 이메일로 받은 인증 버튼을 누르면 계정이 활성화됩니다.
+
+![PickPick v1.8.0 회원가입 화면](docs/images/pickpick-signup-v180.png)
+
+### 비밀번호 재설정 요청
+
+기존 Magic Link 사용자 또는 비밀번호를 잊은 사용자는 가입 이메일로 재설정 링크를 받을 수 있습니다.
+
+![PickPick v1.8.0 비밀번호 재설정 요청 화면](docs/images/pickpick-forgot-password-v180.png)
+
+### 새 비밀번호 등록
+
+재설정 메일의 링크로 돌아오면 새 비밀번호와 확인 값을 입력해 비밀번호를 변경합니다.
+
+![PickPick v1.8.0 새 비밀번호 등록 화면](docs/images/pickpick-reset-password-v180.png)
+
 ### 대화 기록 사이드바
 
 새 대화 시작, 최근 대화 선택, 제목 변경과 삭제를 지원합니다. 비로그인 상태에서는 로그인 안내를 표시합니다.
