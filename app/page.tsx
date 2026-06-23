@@ -32,11 +32,13 @@ function ChatItem({
   delay = 0,
   animate = false,
   autoScroll = false,
+  scrollPosition = "top",
   children,
 }: {
   delay?: number;
   animate?: boolean;
   autoScroll?: boolean;
+  scrollPosition?: "top" | "center";
   children: ReactNode;
 }) {
   const itemRef = useRef<HTMLDivElement>(null);
@@ -50,17 +52,24 @@ function ChatItem({
         window.setTimeout(() => {
           const element = itemRef.current;
           if (!element) return;
-          const top =
-            element.getBoundingClientRect().top + window.scrollY - 84;
-          window.scrollTo({
-            top: Math.max(0, top),
-            behavior: "smooth",
-          });
+          if (scrollPosition === "center") {
+            element.scrollIntoView({
+              behavior: "smooth",
+              block: "center",
+            });
+          } else {
+            const top =
+              element.getBoundingClientRect().top + window.scrollY - 84;
+            window.scrollTo({
+              top: Math.max(0, top),
+              behavior: "smooth",
+            });
+          }
         }, 120);
       }
     }, delay * 1000);
     return () => window.clearTimeout(timer);
-  }, [animate, autoScroll, delay]);
+  }, [animate, autoScroll, delay, scrollPosition]);
 
   return (
     <div
@@ -516,7 +525,7 @@ export default function Home() {
 
           {pendingMessage && (
             <div className="space-y-6">
-              <ChatItem animate>
+              <ChatItem animate autoScroll scrollPosition="center">
                 <div className="flex justify-end">
                   <div className="max-w-[88%] rounded-2xl rounded-tr-md bg-violet-600 px-4 py-3 text-[15px] leading-6 text-white shadow-sm sm:max-w-[70%]">
                     {pendingMessage}
