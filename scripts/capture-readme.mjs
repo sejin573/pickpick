@@ -117,7 +117,7 @@ async function captureInterface(client) {
   );
   await waitForText(client, "PickPick에 로그인");
   await sleep(700);
-  await capture(client, "pickpick-login-v160.png");
+  await capture(client, "pickpick-login-v180.png");
 
   await evaluate(
     client,

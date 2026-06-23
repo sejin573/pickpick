@@ -8,7 +8,8 @@ export async function GET(request: Request) {
   const tokenHash = url.searchParams.get("token_hash");
   const code = url.searchParams.get("code");
   const type = url.searchParams.get("type") as EmailOtpType | null;
-  const next = url.searchParams.get("next") ?? "/";
+  const requestedNext = url.searchParams.get("next") ?? "/";
+  const next = requestedNext.startsWith("/") ? requestedNext : "/";
 
   const supabase = await createClient();
   if (tokenHash && type) {

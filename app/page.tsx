@@ -12,7 +12,7 @@ import {
 import AgentSteps from "@/components/AgentSteps";
 import AnalysisPanel from "@/components/AnalysisPanel";
 import AssistantMessage from "@/components/AssistantMessage";
-import AuthDialog from "@/components/AuthDialog";
+import AuthDialog, { AuthMode } from "@/components/AuthDialog";
 import BuyingGuide from "@/components/BuyingGuide";
 import ChatSidebar from "@/components/ChatSidebar";
 import ChatProgress from "@/components/ChatProgress";
@@ -30,33 +30,33 @@ import {
 
 function ChatItem({
   delay = 0,
-  follow = false,
+  animate = false,
+  autoScroll = false,
   children,
 }: {
   delay?: number;
-  follow?: boolean;
+  animate?: boolean;
+  autoScroll?: boolean;
   children: ReactNode;
 }) {
   const itemRef = useRef<HTMLDivElement>(null);
-  const [visible, setVisible] = useState(!follow);
+  const [visible, setVisible] = useState(!animate);
 
   useEffect(() => {
-    if (!follow) return;
+    if (!animate) return;
     const timer = window.setTimeout(() => {
       setVisible(true);
-      window.setTimeout(() => {
-        itemRef.current?.scrollIntoView({
-          behavior: "smooth",
-          block: "end",
-        });
-        window.setTimeout(
-          () => window.scrollBy({ top: 150, behavior: "smooth" }),
-          220,
-        );
-      }, 80);
+      if (autoScroll) {
+        window.setTimeout(() => {
+          itemRef.current?.scrollIntoView({
+            behavior: "smooth",
+            block: "center",
+          });
+        }, 120);
+      }
     }, delay * 1000);
     return () => window.clearTimeout(timer);
-  }, [delay, follow]);
+  }, [animate, autoScroll, delay]);
 
   return (
     <div
@@ -80,7 +80,7 @@ function RecommendationTurn({
   const meta = turn.response.meta;
   return (
     <div className="space-y-6">
-      <ChatItem follow={latest}>
+      <ChatItem animate={latest}>
         <div className="flex justify-end">
           <div className="max-w-[88%] rounded-2xl rounded-tr-md bg-violet-600 px-4 py-3 text-[15px] leading-6 text-white shadow-sm sm:max-w-[70%]">
             {turn.userMessage}
@@ -88,12 +88,12 @@ function RecommendationTurn({
         </div>
       </ChatItem>
 
-      <ChatItem delay={0.12} follow={latest}>
+      <ChatItem delay={0.12} animate={latest}>
         <ChatProgress complete />
       </ChatItem>
 
       {turn.snapshotVersion >= 0 && (
-        <ChatItem delay={0.24} follow={latest}>
+        <ChatItem delay={0.24} animate={latest}>
           <div className="flex items-center justify-center gap-2 text-center text-[11px] font-medium text-zinc-400">
             <span className="h-1.5 w-1.5 rounded-full bg-violet-500" />
             <span>
@@ -111,7 +111,7 @@ function RecommendationTurn({
       )}
 
       {meta && (
-        <ChatItem delay={0.34} follow={latest}>
+        <ChatItem delay={0.34} animate={latest}>
           <p className="flex flex-wrap items-center justify-center gap-x-3 gap-y-1 text-[11px] font-medium text-zinc-400">
             <span className="flex items-center gap-1.5">
               <span
@@ -132,17 +132,17 @@ function RecommendationTurn({
       )}
 
       {meta?.notice && (
-        <ChatItem delay={0.46} follow={latest}>
+        <ChatItem delay={0.46} animate={latest}>
           <div className="rounded-2xl border border-amber-200 bg-amber-50 px-5 py-4 text-sm text-amber-800">
             {meta.notice}
           </div>
         </ChatItem>
       )}
 
-      <ChatItem delay={0.55} follow={latest}>
+      <ChatItem delay={0.55} animate={latest}>
         <AnalysisPanel analysis={turn.response.analysis} />
       </ChatItem>
-      <ChatItem delay={0.9} follow={latest}>
+      <ChatItem delay={0.9} animate={latest} autoScroll={latest}>
         <AssistantMessage wide>
           <RecommendationCards
             recommendations={turn.response.recommendations}
@@ -151,22 +151,22 @@ function RecommendationTurn({
           />
         </AssistantMessage>
       </ChatItem>
-      <ChatItem delay={1.25} follow={latest}>
+      <ChatItem delay={1.25} animate={latest}>
         <AssistantMessage wide>
           <AgentSteps steps={turn.response.agentSteps} />
         </AssistantMessage>
       </ChatItem>
-      <ChatItem delay={1.55} follow={latest}>
+      <ChatItem delay={1.55} animate={latest}>
         <AssistantMessage wide>
           <ComparisonTable items={turn.response.comparison} />
         </AssistantMessage>
       </ChatItem>
-      <ChatItem delay={1.85} follow={latest}>
+      <ChatItem delay={1.85} animate={latest}>
         <AssistantMessage wide>
           <BuyingGuide guide={turn.response.buyingGuide} />
         </AssistantMessage>
       </ChatItem>
-      <ChatItem delay={2.1} follow={latest}>
+      <ChatItem delay={2.1} animate={latest}>
         <AssistantMessage wide>
           <ServiceInfo onSelect={onSelectPrompt} meta={turn.response.meta} />
         </AssistantMessage>
@@ -188,6 +188,7 @@ export default function Home() {
   const [error, setError] = useState("");
   const [user, setUser] = useState<User | null>(null);
   const [authOpen, setAuthOpen] = useState(false);
+  const [authMode, setAuthMode] = useState<AuthMode>("login");
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [conversations, setConversations] = useState<ConversationSummary[]>([]);
   const [conversationsLoading, setConversationsLoading] = useState(false);
@@ -225,6 +226,11 @@ export default function Home() {
 
   useEffect(() => {
     if (!supabaseConfigured) return;
+    const params = new URLSearchParams(window.location.search);
+    if (params.get("resetPassword") === "1") {
+      setAuthMode("reset");
+      setAuthOpen(true);
+    }
     const supabase = createClient();
     supabase.auth.getUser().then(({ data }) => setUser(data.user));
     const {
@@ -454,13 +460,23 @@ export default function Home() {
         loading={conversationsLoading}
         onClose={() => setSidebarOpen(false)}
         onNewChat={resetToHome}
-        onLogin={() => setAuthOpen(true)}
+        onLogin={() => {
+          setAuthMode("login");
+          setAuthOpen(true);
+        }}
         onLogout={logout}
         onOpenConversation={openConversation}
         onRenameConversation={renameConversation}
         onDeleteConversation={deleteConversation}
       />
-      <AuthDialog open={authOpen} onClose={() => setAuthOpen(false)} />
+      <AuthDialog
+        open={authOpen}
+        initialMode={authMode}
+        onClose={() => {
+          setAuthOpen(false);
+          setAuthMode("login");
+        }}
+      />
       <button
         type="button"
         onClick={() => setSidebarOpen(true)}
@@ -499,14 +515,14 @@ export default function Home() {
 
           {pendingMessage && (
             <div className="space-y-6">
-              <ChatItem follow>
+              <ChatItem animate>
                 <div className="flex justify-end">
                   <div className="max-w-[88%] rounded-2xl rounded-tr-md bg-violet-600 px-4 py-3 text-[15px] leading-6 text-white shadow-sm sm:max-w-[70%]">
                     {pendingMessage}
                   </div>
                 </div>
               </ChatItem>
-              <ChatItem delay={0.12} follow>
+              <ChatItem delay={0.12} animate>
                 <ChatProgress complete={false} />
               </ChatItem>
             </div>

@@ -14,7 +14,7 @@ const fps = 8;
 const profileDir = path.join(os.tmpdir(), `pickpick-video-${Date.now()}`);
 const frameDir = path.join(os.tmpdir(), `pickpick-frames-${Date.now()}`);
 const outputDir = path.resolve("docs", "videos");
-const outputPath = path.join(outputDir, "pickpick-demo-v160.mp4");
+const outputPath = path.join(outputDir, "pickpick-demo-v180.mp4");
 
 const sleep = (milliseconds) =>
   new Promise((resolve) => setTimeout(resolve, milliseconds));
@@ -271,7 +271,7 @@ try {
       ))?.click()`,
     );
     await waitForText(client, "PickPick에 로그인");
-    await addCaption(client, "이메일 Magic Link 로그인으로 대화를 저장합니다");
+    await addCaption(client, "최초 이메일 인증 후 비밀번호로 바로 로그인합니다");
     await sleep(2_500);
     await evaluate(
       client,
