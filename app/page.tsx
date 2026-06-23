@@ -48,9 +48,13 @@ function ChatItem({
       setVisible(true);
       if (autoScroll) {
         window.setTimeout(() => {
-          itemRef.current?.scrollIntoView({
+          const element = itemRef.current;
+          if (!element) return;
+          const top =
+            element.getBoundingClientRect().top + window.scrollY - 84;
+          window.scrollTo({
+            top: Math.max(0, top),
             behavior: "smooth",
-            block: "center",
           });
         }, 120);
       }
@@ -195,7 +199,6 @@ export default function Home() {
   const [activeConversationId, setActiveConversationId] = useState<string | null>(
     null,
   );
-  const resultRef = useRef<HTMLDivElement>(null);
   const requestControllerRef = useRef<AbortController | null>(null);
   const requestIdRef = useRef(0);
 
@@ -321,10 +324,6 @@ export default function Home() {
     setPendingMessage(trimmed);
     setMessage("");
     setError("");
-    window.setTimeout(
-      () => resultRef.current?.scrollIntoView({ behavior: "smooth" }),
-      120,
-    );
     try {
       const response = await fetch("/api/recommend", {
         method: "POST",
@@ -365,6 +364,7 @@ export default function Home() {
         },
       ]);
       setPendingMessage("");
+      setMessage("");
     } catch (caught) {
       if (
         controller.signal.aborted ||
@@ -380,6 +380,7 @@ export default function Home() {
       if (requestId === requestIdRef.current) {
         requestControllerRef.current = null;
         setLoading(false);
+        setMessage("");
       }
     }
   };
@@ -501,7 +502,7 @@ export default function Home() {
           onSubmit={requestRecommendation}
         />
 
-        <div ref={resultRef} className="mt-8 space-y-12 sm:mt-10">
+        <div className="mt-8 space-y-12 sm:mt-10">
           {turns.map((turn, index) => (
             <RecommendationTurn
               key={turn.id}
