@@ -1,0 +1,13 @@
+README.zip
+scripts/clear_koreain_optional_sections.py
+scripts/fill_koreain_nice_final.py
+scripts/fill_koreain_resume.py
+scripts/fill_nice_from_original_koreain.py
+scripts/fill_nice_koreain_resume.py
+scripts/fill_secui_resume.py
+scripts/fix_koreain_photo_boxes.py
+scripts/fix_optional_sections_preserve_template.py
+scripts/make_nice_from_existing_koreain.py
+scripts/remove_photo_nested_tables_xml.py
+scripts/rewrite_secui_self_intro_only.py
+자기소개서_제출용_수정본.md
