@@ -5,36 +5,11 @@ import { RecommendRequest, RecommendResponse } from "@/lib/types";
 import { reviewCatalogWithAgent } from "./catalog-review-tool";
 import { buildAgentContext } from "./context-chain";
 import { runIntentChain } from "./intent-chain";
-import {
-  LearningMemory,
-  loadLearningMemory,
-  persistAgentLearning,
-} from "./learning-memory";
+import { loadLearningMemory, persistAgentLearning } from "./learning-memory";
 import { runProductSearchTool } from "./product-search-tool";
 import { runRecommendationChain } from "./recommendation-chain";
 import { createAgentState, runAgentAction } from "./runtime";
 import { runSearchPlanChain } from "./search-plan-chain";
-
-function buildWorkingMessage(message: string, memory: LearningMemory): string {
-  const hints = [
-    memory.likedCategories.length
-      ? `선호 카테고리: ${memory.likedCategories.join(", ")}`
-      : "",
-    memory.likedKeywords.length
-      ? `선호 키워드: ${memory.likedKeywords.join(", ")}`
-      : "",
-    memory.preferredPriceMin && memory.preferredPriceMax
-      ? `최근 선호 가격 범위: ${memory.preferredPriceMin}~${memory.preferredPriceMax}원`
-      : "",
-    memory.observations.length
-      ? `이전 관찰: ${memory.observations.slice(0, 3).join(" / ")}`
-      : "",
-  ].filter(Boolean);
-
-  if (hints.length === 0) return message;
-
-  return `${message}\n\n[PickPick agent memory]\n${hints.join("\n")}`;
-}
 
 export async function runPickPickAgent(
   body: Partial<RecommendRequest>,
@@ -64,13 +39,10 @@ export async function runPickPickAgent(
     },
   );
 
-  const workingMessage = buildWorkingMessage(
-    state.context.contextualMessage,
-    memory,
-  );
+  const planningMessage = state.context.contextualMessage;
 
   const intentResult = await runAgentAction(state, "understand_intent", () => {
-    const result = runIntentChain(state.context?.contextualMessage ?? "");
+    const result = runIntentChain(planningMessage);
     return {
       result,
       observation: `${result.analysis.occasion} / ${result.analysis.budget} 요청으로 이해`,
@@ -79,7 +51,7 @@ export async function runPickPickAgent(
   state.analysis = intentResult.analysis;
 
   state.queryPlan = await runAgentAction(state, "plan_search", async () => {
-    const result = await runSearchPlanChain(workingMessage, state.analysis!);
+    const result = await runSearchPlanChain(planningMessage, state.analysis!);
     return {
       result,
       observation: `${result.groups.length}개 검색 그룹 생성 (${result.mode})`,
@@ -88,7 +60,7 @@ export async function runPickPickAgent(
 
   const productSearch = await runAgentAction(state, "search_products", async () => {
     const result = await runProductSearchTool(
-      workingMessage,
+      planningMessage,
       state.analysis!,
       state.queryPlan!.groups,
       state.context!.excludedProductIds,
@@ -121,7 +93,7 @@ export async function runPickPickAgent(
     "compose_recommendation",
     async () => {
       const result = await runRecommendationChain({
-        message: workingMessage,
+        message: planningMessage,
         analysis: state.analysis!,
         queryPlanningMode: state.queryPlan!.mode,
         liveCatalog: state.reviewedCatalog ?? null,
