@@ -340,6 +340,7 @@ export default function Home() {
         body: JSON.stringify({
           message: trimmed,
           context: {
+            conversationId,
             messages: previousTurns.map((turn) => turn.userMessage),
             excludedProductIds: previousTurns.flatMap((turn) =>
               (turn.response.recommendationGroups?.length

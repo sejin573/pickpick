@@ -1,6 +1,8 @@
 import { NextResponse } from "next/server";
 
 import { runPickPickAgent } from "@/lib/agent/pickpick-agent";
+import { getAuthenticatedUserId } from "@/lib/supabase/auth";
+import { isSupabaseConfigured } from "@/lib/supabase/config";
 import { RecommendRequest } from "@/lib/types";
 
 export const runtime = "nodejs";
@@ -67,8 +69,14 @@ export async function POST(request: Request) {
       );
     }
 
+    const auth = isSupabaseConfigured()
+      ? await getAuthenticatedUserId()
+      : { supabase: null, userId: null };
+
     const result = await runPickPickAgent(body, {
       maxMessageLength: MAX_MESSAGE_LENGTH,
+      supabase: auth.supabase,
+      userId: auth.userId,
     });
 
     return NextResponse.json(result);

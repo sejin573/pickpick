@@ -124,6 +124,16 @@ export interface RecommendResponse {
     catalogLabel?: string;
     notice?: string;
     queryPlanningMode?: "rules" | "openai-assisted";
+    agentRunId?: string;
+    agentTrace?: Array<{
+      action: string;
+      status: "completed" | "skipped" | "failed";
+      observation: string;
+      elapsedMs: number;
+    }>;
+    learningEnabled?: boolean;
+    learningMemoryApplied?: boolean;
+    rejectedProductCount?: number;
   };
 }
 
@@ -132,6 +142,7 @@ export interface RecommendRequest {
   context?: {
     messages: string[];
     excludedProductIds?: string[];
+    conversationId?: string | null;
   };
 }
 
