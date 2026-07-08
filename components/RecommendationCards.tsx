@@ -12,12 +12,18 @@ interface RecommendationCardsProps {
   recommendations: Recommendation[];
   groups?: RecommendationGroup[];
   priceBands?: PriceBand[];
+  agentRunId?: string;
+  conversationId?: string | null;
+  learningEnabled?: boolean;
 }
 
 export default function RecommendationCards({
   recommendations,
   groups,
   priceBands,
+  agentRunId,
+  conversationId,
+  learningEnabled,
 }: RecommendationCardsProps) {
   const allGroups = useMemo<RecommendationGroup[]>(
     () =>
@@ -50,6 +56,9 @@ export default function RecommendationCards({
 
   const [activeGroupIndex, setActiveGroupIndex] = useState(0);
   const [activeProductIndex, setActiveProductIndex] = useState(0);
+  const [feedbackStatus, setFeedbackStatus] = useState<Record<string, string>>(
+    {},
+  );
 
   useEffect(() => {
     setActiveGroupIndex(0);
@@ -82,6 +91,50 @@ export default function RecommendationCards({
     }, 5200);
     return () => window.clearInterval(timer);
   }, [activeGroup]);
+
+  const sendLearningFeedback = async (
+    product: Recommendation,
+    rating: "like" | "dislike" | "more_like_this" | "less_like_this",
+    note?: string,
+  ) => {
+    if (!agentRunId || !learningEnabled) return;
+
+    setFeedbackStatus((current) => ({
+      ...current,
+      [product.id]: "saving",
+    }));
+
+    try {
+      const response = await fetch("/api/agent/feedback", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          runId: agentRunId,
+          conversationId,
+          productId: product.id,
+          category: product.category,
+          keywords: [
+            product.name,
+            product.brand,
+            product.mallName,
+            activeGroup?.category,
+          ].filter(Boolean),
+          rating,
+          note,
+        }),
+      });
+
+      setFeedbackStatus((current) => ({
+        ...current,
+        [product.id]: response.ok ? "saved" : "failed",
+      }));
+    } catch {
+      setFeedbackStatus((current) => ({
+        ...current,
+        [product.id]: "failed",
+      }));
+    }
+  };
 
   if (!activeGroup || !activeProduct) {
     return null;
@@ -213,6 +266,58 @@ export default function RecommendationCards({
             <p className="mt-2 text-sm leading-7 text-zinc-600">{activeProduct.reason}</p>
           </div>
 
+          <div className="mt-5 rounded-2xl border border-violet-100 bg-violet-50/60 p-4">
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+              <div>
+                <p className="text-xs font-black text-violet-700">
+                  LEARNING FEEDBACK
+                </p>
+                <p className="mt-1 text-xs leading-5 text-zinc-500">
+                  {learningEnabled
+                    ? "반응을 남기면 다음 추천에서 취향 신호로 반영돼요."
+                    : "로그인하면 이 반응을 다음 추천에 학습할 수 있어요."}
+                </p>
+              </div>
+              <div className="flex flex-wrap gap-2">
+                <button
+                  type="button"
+                  disabled={!agentRunId || !learningEnabled}
+                  onClick={() => sendLearningFeedback(activeProduct, "like")}
+                  className="rounded-full bg-white px-3 py-2 text-xs font-black text-emerald-700 shadow-sm transition hover:-translate-y-0.5 hover:shadow disabled:cursor-not-allowed disabled:opacity-50"
+                >
+                  좋아요
+                </button>
+                <button
+                  type="button"
+                  disabled={!agentRunId || !learningEnabled}
+                  onClick={() =>
+                    sendLearningFeedback(activeProduct, "more_like_this")
+                  }
+                  className="rounded-full bg-white px-3 py-2 text-xs font-black text-violet-700 shadow-sm transition hover:-translate-y-0.5 hover:shadow disabled:cursor-not-allowed disabled:opacity-50"
+                >
+                  비슷한 상품
+                </button>
+                <button
+                  type="button"
+                  disabled={!agentRunId || !learningEnabled}
+                  onClick={() => sendLearningFeedback(activeProduct, "dislike")}
+                  className="rounded-full bg-white px-3 py-2 text-xs font-black text-rose-700 shadow-sm transition hover:-translate-y-0.5 hover:shadow disabled:cursor-not-allowed disabled:opacity-50"
+                >
+                  별로예요
+                </button>
+              </div>
+            </div>
+            {feedbackStatus[activeProduct.id] && (
+              <p className="mt-3 text-xs font-semibold text-zinc-500">
+                {feedbackStatus[activeProduct.id] === "saving"
+                  ? "취향 신호 저장 중..."
+                  : feedbackStatus[activeProduct.id] === "saved"
+                  ? "다음 추천에 반영할게요."
+                  : "저장하지 못했어요. 로그인 상태를 확인해 주세요."}
+              </p>
+            )}
+          </div>
+
           <div className="mt-6 grid gap-3 sm:grid-cols-2">
             <div className="rounded-2xl border border-emerald-100 bg-emerald-50/60 p-4">
               <p className="text-xs font-black text-emerald-700">이런 점이 좋아요</p>
@@ -233,6 +338,13 @@ export default function RecommendationCards({
               href={activeProduct.productUrl}
               target="_blank"
               rel="noopener noreferrer nofollow"
+              onClick={() =>
+                sendLearningFeedback(
+                  activeProduct,
+                  "more_like_this",
+                  "product_link_click",
+                )
+              }
               className="mt-6 flex w-full items-center justify-center gap-2 rounded-2xl bg-ink px-5 py-4 text-sm font-black text-white transition hover:bg-violet-700"
             >
               {activeProduct.mallName ?? "판매처"}에서 상품 확인

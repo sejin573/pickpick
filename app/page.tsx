@@ -85,10 +85,12 @@ function RecommendationTurn({
   turn,
   latest,
   onSelectPrompt,
+  conversationId,
 }: {
   turn: ConversationTurn;
   latest: boolean;
   onSelectPrompt: (prompt: string) => void;
+  conversationId: string | null;
 }) {
   const meta = turn.response.meta;
   return (
@@ -161,12 +163,18 @@ function RecommendationTurn({
             recommendations={turn.response.recommendations}
             groups={turn.response.recommendationGroups}
             priceBands={turn.response.priceBands}
+            agentRunId={turn.response.meta?.agentRunId}
+            conversationId={conversationId}
+            learningEnabled={turn.response.meta?.learningEnabled}
           />
         </AssistantMessage>
       </ChatItem>
       <ChatItem delay={1.25} animate={latest}>
         <AssistantMessage wide>
-          <AgentSteps steps={turn.response.agentSteps} />
+          <AgentSteps
+            steps={turn.response.agentSteps}
+            trace={turn.response.meta?.agentTrace}
+          />
         </AssistantMessage>
       </ChatItem>
       <ChatItem delay={1.55} animate={latest}>
@@ -521,6 +529,7 @@ export default function Home() {
                 index === turns.length - 1 && turn.id === animatedTurnId
               }
               onSelectPrompt={selectPrompt}
+              conversationId={activeConversationId}
             />
           ))}
 
